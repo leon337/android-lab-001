@@ -103,7 +103,7 @@ class LiveAudioClient(private val context: Context) {
                             .put("responseModalities", org.json.JSONArray().put("AUDIO"))
                             .put("thinkingConfig", JSONObject().put("thinkingLevel", "LOW"))
                             .put("speechConfig", JSONObject().put("voiceConfig", JSONObject()
-                                .put("prebuiltVoiceConfig", JSONObject().put("voiceName", "Puck")))))
+                                .put("prebuiltVoiceConfig", JSONObject().put("voiceName", "Puck"))))))
                     webSocket.send(setup.toString())
                     _state.value = LiveUiState(status = "Aguardando inicialização da sessão…", starting = true)
                 }
