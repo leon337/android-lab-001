@@ -36,13 +36,17 @@ class AssistenteInstrumentadoTest {
             rule.onAllNodesWithTag("resumo-resultado").fetchSemanticsNodes().isNotEmpty()
         }
         rule.onNodeWithText("Descartar resumo").performScrollTo().performClick()
+        rule.waitUntil(timeoutMillis = 5_000) {
+            rule.onAllNodesWithTag("resumo-resultado").fetchSemanticsNodes().isEmpty()
+        }
         rule.onNodeWithTag("resumo-resultado").assertDoesNotExist()
     }
 
     @Test
     fun painelLivePresenteMasConexaoBloqueadaSemPareamento() {
         rule.onNodeWithText("Gemini 3.8 Live · Thinking").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("Iniciar conversa ao vivo").performScrollTo().assertIsNotEnabled()
+        rule.onNodeWithTag("gemini-pairing-code").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithTag("gemini-connect").performScrollTo().assertIsNotEnabled()
     }
 
 }
