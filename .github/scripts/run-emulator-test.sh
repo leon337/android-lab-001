@@ -48,6 +48,13 @@ tap_text() {
       adb shell input tap $point
       return
     fi
+    if point=$(find_point 'Wait'); then
+      echo "AVISO TRANSITORIO: launcher Android sem resposta; selecionando Wait em $point"
+      adb exec-out screencap -p > "$EVIDENCE_DIR/diagnostico-launcher-anr.png"
+      adb shell input tap $point
+      sleep 3
+      continue
+    fi
     echo "Elemento '$target' nao visivel; rolando tela, tentativa $attempt"
     adb shell input swipe 500 1830 500 630 350
     sleep 1
