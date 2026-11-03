@@ -1,6 +1,7 @@
 package br.com.laboratorio.android
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -37,4 +38,11 @@ class AssistenteInstrumentadoTest {
         rule.onNodeWithText("Descartar resumo").performScrollTo().performClick()
         rule.onNodeWithTag("resumo-resultado").assertDoesNotExist()
     }
+
+    @Test
+    fun painelLivePresenteMasConexaoBloqueadaSemPareamento() {
+        rule.onNodeWithText("Gemini 3.8 Live · Thinking").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Iniciar conversa ao vivo").performScrollTo().assertIsNotEnabled()
+    }
+
 }

@@ -57,7 +57,7 @@ class LiveAudioClient(private val context: Context) {
     private var playback: AudioTrack? = null
     private var captureJob: Job? = null
     private val recording = AtomicBoolean(false)
-    private val incomingAudio = Channel<ByteArray>(Channel.UNLIMITED)
+    private val incomingAudio = Channel<ByteArray>(24)
 
     init {
         io.launch {
@@ -133,13 +133,15 @@ class LiveAudioClient(private val context: Context) {
             startAudio()
             return
         }
-        val interaction = packet.optString("interactionStatus", "")
+        // O estado da interação no Gemini 3.8 Live chega dentro de serverContent,
+        // e não no objeto de evento superior. turnComplete não implica IDLE.
+        val content = packet.optJSONObject("serverContent") ?: return
+        val interaction = content.optString("interactionStatus", "")
         if (interaction == "IN_PROGRESS") {
             _state.value = _state.value.copy(status = "Gemini está raciocinando…", reasoning = true)
         } else if (interaction == "IDLE") {
             _state.value = _state.value.copy(status = "Conectado — pode falar", reasoning = false)
         }
-        val content = packet.optJSONObject("serverContent") ?: return
         if (content.optBoolean("interrupted")) {
             while (incomingAudio.tryReceive().isSuccess) { /* descarta áudio interrompido */ }
         }
