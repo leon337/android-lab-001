@@ -14,13 +14,17 @@ gradle --no-daemon :app:connectedDebugAndroidTest
 echo "=== Instalando e abrindo Gemini Live ==="
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am force-stop br.com.laboratorio.android || true
+# Pixel Launcher can ANR while the emulator is under instrumentation load.
+# Stop it before the UI smoke; the app is launched directly by component name.
+adb shell am force-stop com.google.android.apps.nexuslauncher || true
+sleep 2
 adb shell am start -W -n br.com.laboratorio.android/.MainActivity
-sleep 3
+sleep 5
 
 dump_ui() {
   local filename="$1"
-  adb shell uiautomator dump /sdcard/window.xml >/dev/null
-  adb pull /sdcard/window.xml "$EVIDENCE_DIR/$filename" >/dev/null
+  timeout 15s adb shell uiautomator dump /sdcard/window.xml >/dev/null
+  timeout 10s adb pull /sdcard/window.xml "$EVIDENCE_DIR/$filename" >/dev/null
 }
 
 find_point() {
@@ -39,38 +43,6 @@ for node in nodes:
 sys.exit(4)
 PY
 }
-
-dismiss_system_anr() {
-  for attempt in 1 2 3; do
-    dump_ui "window-current.xml"
-    if ! grep -Eiq "isn't responding|is not responding|não está respondendo" "$EVIDENCE_DIR/window-current.xml"; then
-      return 0
-    fi
-
-    point="$(find_point "Wait" || true)"
-    if [[ -n "$point" ]]; then
-      read -r x y <<< "$point"
-      echo "AVISO: Android system ANR detectado; aguardando launcher (tentativa $attempt)."
-      adb shell input tap "$x" "$y"
-      sleep 3
-    fi
-  done
-
-  dump_ui "window-current.xml"
-  if grep -Eiq "isn't responding|is not responding|não está respondendo" "$EVIDENCE_DIR/window-current.xml"; then
-    point="$(find_point "Close app" || true)"
-    if [[ -n "$point" ]]; then
-      read -r x y <<< "$point"
-      echo "AVISO: encerrando launcher travado para liberar o teste do app."
-      adb shell input tap "$x" "$y"
-      sleep 3
-      adb shell am start -W -n br.com.laboratorio.android/.MainActivity
-      sleep 3
-    fi
-  fi
-}
-
-dismiss_system_anr
 
 echo "=== Validando tela de configuracao ==="
 READY=0
