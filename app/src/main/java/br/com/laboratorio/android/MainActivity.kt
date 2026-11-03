@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import br.com.laboratorio.android.live.LiveVoicePanel
 import br.com.laboratorio.android.ai.MockAIRepository
 import br.com.laboratorio.android.notes.NotesUiState
 import br.com.laboratorio.android.notes.NotesViewModel
@@ -158,6 +159,7 @@ private fun NotesScreen(
                 Text("Testar interação")
             }
             Spacer(modifier = Modifier.height(8.dp))
+            LiveVoicePanel()
         }
     }
 }
