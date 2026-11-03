@@ -7,7 +7,8 @@
 - Notebook: `leo-N43SM`, online.
 - Repositório: `leon337/android-lab-001`.
 - Branch: `feat/phase-01-version-updates-personalities`.
-- Head de código validado: `77a53f3653b04f314741416399772931765a995f`.
+- Head atual do PR #3: `8e5967b15b1bcffff7b8665a1338c23444026bdc`.
+- Último commit de código validado: `77a53f3653b04f314741416399772931765a995f`.
 - PR #2: aberto, draft, base `main`.
 - PR #3: aberto, draft, base `feat/gemini-live-secure`, dependente do PR #2.
 - Tag baseline: `v1.0.0-mvp.1` → `934dcafed30f7eeba4eac32d14725aa73ac37152`.
@@ -21,17 +22,18 @@
 - Workflow de release restrito a `main`, exige tag ancestral de `main`, valida SemVer/versionCode e assinatura PKCS#12.
 - Workflow cria release draft por padrão; publicação imediata exige escolha explícita e aprovação do Environment.
 - GitHub Environment `android-release` criado com reviewer LEANDRO, policy `main` e bypass administrativo desabilitado.
-- Documentação de assinatura e security review atualizadas.
+- Documentação de assinatura, security review e PRF MCF completos.
 - Smoke de emulador ajustado para encerrar Pixel Launcher antes de validar a UI e limitar o tempo de `uiautomator dump`.
 
 ## CI e evidências
 - Build APK run `41730256790`: sucesso.
 - Emulator run `41730261955`: oito testes instrumentados passaram; smoke de UI falhou por ANR do Pixel Launcher.
 - Emulator run `41731111566`: cancelado durante diagnóstico.
-- Emulator run `41731678974`: sucesso completo no commit `77a53f3`.
+- Emulator run `41731678974`: sucesso completo no commit de código `77a53f3`.
 - Captura `app-inicial.png`: 1080×2400.
 - XML de interface confirmou campo de API Key, modelo Gemini 3.8 Live e modelo Gemini 3.8 Live Extended Thinking.
 - `git diff --check`, YAML parse e `bash -n`: sucesso.
+- Commit final de documentação MCF: `8e5967b`; não altera o código validado.
 
 ## Não concluído
 - Keystore PKCS#12 não foi gerado.

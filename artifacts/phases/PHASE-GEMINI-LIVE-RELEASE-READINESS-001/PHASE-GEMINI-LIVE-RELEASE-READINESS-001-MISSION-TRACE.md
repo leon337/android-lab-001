@@ -26,7 +26,12 @@
    - Script ajustado para encerrar Pixel Launcher antes do smoke e limitar uiautomator dump.
    - Emulator run `41731678974`: sucesso completo. XML confirmou campo da API Key e os dois modelos; screenshot 1080×2400.
 
-6. **MESTRE — tentou preparar assinatura**
+6. **MESTRE — registrou o PRF**
+   - Commit de código testado: `77a53f3`.
+   - Commit final de documentação e evidências: `8e5967b`.
+   - Manifestos SHA-256 dos artefatos foram verificados.
+
+7. **MESTRE — tentou preparar assinatura**
    - Geração local e upload dos secrets não foram concluídos pela sessão automatizada.
    - Nenhum keystore, senha ou secret foi criado ou exposto.
    - Procedimento manual documentado em `docs/RELEASE-SIGNING-SETUP.md`.

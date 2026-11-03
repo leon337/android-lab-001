@@ -30,8 +30,9 @@ NOTEBOOK / GITHUB
 Host: leo-N43SM
 Remote Desktop Commander device: c1fcefcb-a432-4283-9841-c233761b653d
 Repository: leon337/android-lab-001
-Working branch: feat/phase-01-version-updates-personalities
-Code head validated: 77a53f3653b04f314741416399772931765a995f
+Branch: feat/phase-01-version-updates-personalities
+Current PR head: 8e5967b15b1bcffff7b8665a1338c23444026bdc
+Code head tested: 77a53f3653b04f314741416399772931765a995f
 
 PULL REQUESTS
 -------------
@@ -48,7 +49,7 @@ PR #3:
 - Draft: true
 - Base: feat/gemini-live-secure
 - Head: feat/phase-01-version-updates-personalities
-- Code head tested: 77a53f3653b04f314741416399772931765a995f
+- Current head: 8e5967b15b1bcffff7b8665a1338c23444026bdc
 - Depends on PR #2.
 
 BASELINE / RELEASES
@@ -64,7 +65,7 @@ CI
 - Build run 41730256790: SUCCESS.
 - Emulator run 41730261955: eight instrumented tests PASS; UI smoke FAIL due Pixel Launcher ANR.
 - Emulator run 41731111566: CANCELLED during diagnosis.
-- Emulator run 41731678974: SUCCESS, including instrumented tests and UI smoke.
+- Emulator run 41731678974: SUCCESS, including instrumentation and UI smoke.
 - UI XML confirms API key field, Gemini 3.8 Live and Gemini 3.8 Live Extended Thinking.
 - Screenshot artifact: 1080x2400.
 - YAML parse, workflow bash syntax, emulator script bash syntax and git diff --check: PASS.
