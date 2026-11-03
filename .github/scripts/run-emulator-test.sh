@@ -40,6 +40,38 @@ sys.exit(4)
 PY
 }
 
+dismiss_system_anr() {
+  for attempt in 1 2 3; do
+    dump_ui "window-current.xml"
+    if ! grep -Eiq "isn't responding|is not responding|não está respondendo" "$EVIDENCE_DIR/window-current.xml"; then
+      return 0
+    fi
+
+    point="$(find_point "Wait" || true)"
+    if [[ -n "$point" ]]; then
+      read -r x y <<< "$point"
+      echo "AVISO: Android system ANR detectado; aguardando launcher (tentativa $attempt)."
+      adb shell input tap "$x" "$y"
+      sleep 3
+    fi
+  done
+
+  dump_ui "window-current.xml"
+  if grep -Eiq "isn't responding|is not responding|não está respondendo" "$EVIDENCE_DIR/window-current.xml"; then
+    point="$(find_point "Close app" || true)"
+    if [[ -n "$point" ]]; then
+      read -r x y <<< "$point"
+      echo "AVISO: encerrando launcher travado para liberar o teste do app."
+      adb shell input tap "$x" "$y"
+      sleep 3
+      adb shell am start -W -n br.com.laboratorio.android/.MainActivity
+      sleep 3
+    fi
+  fi
+}
+
+dismiss_system_anr
+
 echo "=== Validando tela de configuracao ==="
 READY=0
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
