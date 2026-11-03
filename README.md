@@ -73,7 +73,7 @@ O workflow exige estes GitHub Actions secrets:
 - `ANDROID_SIGNING_KEY_ALIAS`
 - `ANDROID_SIGNING_KEY_PASSWORD`
 
-O keystore deve ser persistente, guardado fora do repositório e nunca enviado ao Git. O workflow falha fechado se algum segredo estiver ausente.
+O keystore deve ser persistente, guardado fora do repositório e nunca enviado ao Git. O workflow falha fechado se algum segredo estiver ausente. Consulte [Configuração de assinatura de releases](docs/RELEASE-SIGNING-SETUP.md) para criar o keystore e cadastrar os secrets sem expor valores no chat.
 
 **Migração inicial de assinatura:** o MVP `1.0.0` foi instalado a partir de um APK debug assinado por uma chave efêmera do runner CI. A primeira release assinada com o keystore persistente terá certificado diferente e não poderá atualizar essa instalação in-place. Será necessária uma migração única autorizada, que apaga dados locais e exige cadastrar novamente a API Key. As atualizações seguintes preservam os dados desde que o certificado permaneça o mesmo.
 
