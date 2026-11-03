@@ -173,7 +173,7 @@ fun AppUpdatesScreen(
         if (state.isDownloading) {
             Text("Baixando e verificando APK…", style = MaterialTheme.typography.bodyMedium)
             LinearProgressIndicator(
-                progress = state.downloadProgress / 100f,
+                progress = { state.downloadProgress / 100f },
                 modifier = Modifier.fillMaxWidth(),
             )
             Text("${state.downloadProgress}%", style = MaterialTheme.typography.labelSmall)

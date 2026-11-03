@@ -1,6 +1,5 @@
 package br.com.laboratorio.android
 
-import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -20,10 +19,10 @@ class GeminiLiveSettingsInstrumentedTest {
         rule.onNodeWithText("Gemini 3.8 Live (baixa latência)").assertIsDisplayed()
         rule.onNodeWithText("Gemini 3.8 Live Extended Thinking").assertIsDisplayed()
         rule.onNodeWithTag("settings-save").assertIsNotEnabled()
-        rule.onNodeWithText("Personalidade do assistente").assertExists()
-        rule.onNodeWithText("Professor paciente").assertExists()
-        rule.onNodeWithTag("personality-developer").assertExists()
-        rule.onNodeWithText("Comportamento").assertExists()
-        rule.onNodeWithTag("open-updates").assertExists()
+        rule.onNodeWithText("Personalidade do assistente").fetchSemanticsNode()
+        rule.onNodeWithText("Professor paciente").fetchSemanticsNode()
+        rule.onNodeWithTag("personality-developer").fetchSemanticsNode()
+        rule.onNodeWithText("Comportamento").fetchSemanticsNode()
+        rule.onNodeWithTag("open-updates").fetchSemanticsNode()
     }
 }
