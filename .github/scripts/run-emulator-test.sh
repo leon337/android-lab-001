@@ -22,6 +22,26 @@ dump_ui() {
   adb pull /sdcard/window.xml "$EVIDENCE_DIR/$filename" >/dev/null
 }
 
+dismiss_wait_dialogs() {
+  local attempt point
+  for attempt in 1 2 3 4; do
+    dump_ui "window-current.xml"
+    if point=$(find_point 'Wait'); then
+      echo "AVISO TRANSITORIO: dialogo do launcher detectado apos acao; selecionando Wait em $point"
+      adb exec-out screencap -p > "$EVIDENCE_DIR/diagnostico-launcher-anr.png"
+      adb shell input tap $point
+      sleep 3
+    else
+      return 0
+    fi
+  done
+  dump_ui "window-current.xml"
+  if find_point 'Wait' >/dev/null; then
+    echo "ERRO: dialogo Wait persistiu apos quatro tentativas" >&2
+    return 1
+  fi
+}
+
 find_point() {
   python3 - "$EVIDENCE_DIR/window-current.xml" "$1" <<'PY'
 import re,sys,xml.etree.ElementTree as ET
@@ -46,6 +66,8 @@ tap_text() {
     if point=$(find_point "$target"); then
       echo "Tap '$target' em $point"
       adb shell input tap $point
+      sleep 1
+      dismiss_wait_dialogs
       return
     fi
     if point=$(find_point 'Wait'); then
@@ -94,6 +116,7 @@ adb shell input text 'Aprendemos%sKotlin%sCompose%se%sarquitetura%sAndroid'
 adb shell input keyevent 4
 tap_text 'Gerar resumo (Mock)'
 sleep 3
+dismiss_wait_dialogs
 dump_ui "resumo-sugerido.xml"
 python3 - "$EVIDENCE_DIR/resumo-sugerido.xml" <<'PY'
 import sys,xml.etree.ElementTree as ET
@@ -107,6 +130,7 @@ adb exec-out screencap -p > "$EVIDENCE_DIR/resumo-sugerido.png"
 echo "=== Human-in-the-Loop: aprovacao da sugestao ==="
 tap_text 'Aprovar resumo'
 sleep 1
+dismiss_wait_dialogs
 dump_ui "resumo-aprovado.xml"
 python3 - "$EVIDENCE_DIR/resumo-aprovado.xml" <<'PY'
 import sys,xml.etree.ElementTree as ET
