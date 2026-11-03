@@ -7,4 +7,4 @@
 - Risco: baixo, desde que não publicado e não conectado a recursos pagos.
 - Gate atual: autorização para escolher visibilidade/criação de repositório e disparar workflow remoto.
 - Evidências atuais: notebook Linux sem Java/Gradle/Android SDK no PATH, CLI gh autenticado; MBC gateway disponível, conexão Playwright Brave pendente de seleção na extensão.
-- Estado: PREPARADO_LOCALMENTE; BUILD_NAO_EXECUTADO; SEM_APK.
+- Estado: BUILD_ENTREGUE; VALIDACAO_NO_DISPOSITIVO_PENDENTE. Evidências: [RESULTADO](EXPERIMENTO-001-RESULTADO.md).
