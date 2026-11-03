@@ -7,7 +7,7 @@
 - Notebook: `leo-N43SM`, online.
 - Repositório: `leon337/android-lab-001`.
 - Branch: `feat/phase-01-version-updates-personalities`.
-- Head atual do PR #3: `8e5967b15b1bcffff7b8665a1338c23444026bdc`.
+- Head atual do PR #3 no checkpoint: `7d04cd3dd8fa7a5323b8cbba478e7432c112795b`.
 - Último commit de código validado: `77a53f3653b04f314741416399772931765a995f`.
 - PR #2: aberto, draft, base `main`.
 - PR #3: aberto, draft, base `feat/gemini-live-secure`, dependente do PR #2.
@@ -33,7 +33,7 @@
 - Captura `app-inicial.png`: 1080×2400.
 - XML de interface confirmou campo de API Key, modelo Gemini 3.8 Live e modelo Gemini 3.8 Live Extended Thinking.
 - `git diff --check`, YAML parse e `bash -n`: sucesso.
-- Commit final de documentação MCF: `8e5967b`; não altera o código validado.
+- Commits de documentação MCF após o código testado: `8e5967b`, `dade6ed` e `7d04cd3`; não alteram o código validado.
 
 ## Não concluído
 - Keystore PKCS#12 não foi gerado.

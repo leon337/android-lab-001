@@ -30,6 +30,7 @@
    - Commit de código testado: `77a53f3`.
    - Commit de documentação MCF: `8e5967b`.
    - Commit final de validação e checkpoint: `dade6ed`.
+   - Commit final de mission trace: `7d04cd3`.
    - Manifestos SHA-256 dos artefatos foram verificados.
 
 7. **MESTRE — tentou preparar assinatura**
