@@ -1,0 +1,56 @@
+name: Teste Android em emulador
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  teste-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Baixar codigo do repositorio
+        uses: actions/checkout@v4
+      - name: Habilitar KVM para Android virtual
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Instalar plataforma Android e build tools
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Compilar aplicativo e pacote de testes
+        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Executar testes no Android virtual
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: bash .github/scripts/run-emulator-test.sh
+      - name: Publicar relatorios e capturas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lab-001-emulador-evidencias
+          path: |
+            artifacts/emulator/
+            app/build/outputs/androidTest-results/connected/
+            app/build/reports/androidTests/connected/
+          if-no-files-found: warn
+          retention-days: 1
