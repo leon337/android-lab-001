@@ -1,6 +1,7 @@
 package br.com.laboratorio.android
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -17,5 +18,6 @@ class GeminiLiveSettingsInstrumentedTest {
         rule.onNodeWithTag("api-key-input").assertIsDisplayed()
         rule.onNodeWithText("Gemini 3.8 Live (baixa latência)").assertIsDisplayed()
         rule.onNodeWithText("Gemini 3.8 Live Extended Thinking").assertIsDisplayed()
+        rule.onNodeWithTag("settings-save").assertIsNotEnabled()
     }
 }

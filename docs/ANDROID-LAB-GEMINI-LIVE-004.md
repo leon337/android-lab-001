@@ -1,45 +1,38 @@
-# Android Lab — Gemini Live Extended Thinking
+# Gemini Live Android — configuração e segurança
 
-**Modelo:** gemini-3.8-live-extended-thinking, thinking level LOW.
-**Estratégia:** microfone Android em PCM 16 kHz → Live WebSocket → áudio do modelo PCM 24 kHz → alto-falante Android.
-**Backend:** Node.js no Render, com chave Gemini exclusivamente no servidor e tokens efêmeros de uso único.
+## Objetivo
+Aplicativo Android nativo de conversação por voz em tempo real com os modelos Gemini 3.8 Live e Gemini 3.8 Live Extended Thinking.
 
-## Versões do protocolo
+## Modelos
+- `gemini-3.8-live`: conversação de baixa latência. Não enviar `thinkingConfig`.
+- `gemini-3.8-live-extended-thinking`: raciocínio em segundo plano. Aceita `thinkingLevel` low, medium ou high. A interface mostra o seletor apenas para esse modelo.
 
-- Provisionamento do token efêmero: REST https://generativelanguage.googleapis.com/v1beta/auth_tokens.
-- Conexão WebSocket com token efêmero: BidiGenerateContentConstrained em v1alpha.
-- A escolha de v1alpha segue o SDK oficial Google, que detecta o prefixo auth_tokens/, usa o método BidiGenerateContentConstrained, envia Authorization: Token ... e alerta que o suporte efêmero está em v1alpha.
-- O suporte a tokens efêmeros é experimental/preview. O endpoint correto precisa ser validado em uma sessão real antes de declarar integração funcional.
+## Fluxo de autenticação
+1. O usuário cola a chave API na tela Configurações.
+2. O app cifra a chave com AES-GCM; a chave AES é criada e mantida pelo Android Keystore.
+3. Ao iniciar uma conversa, o app chama `POST https://generativelanguage.googleapis.com/v1beta/auth_tokens` usando `x-goog-api-key` no cabeçalho.
+4. O pedido cria token efêmero com `uses=1`, janela de início de 60 segundos e validade de 30 minutos.
+5. O app abre o WebSocket v1beta `BidiGenerateContentConstrained` usando o token efêmero no parâmetro `access_token`.
+6. O modelo e as opções de áudio são enviados no primeiro pacote `setup`.
 
-## Autenticação do dispositivo
+O app não envia a chave permanente no WebSocket e não incorpora nenhuma chave em BuildConfig, recursos ou código-fonte. O pedido de token não usa `liveConnectConstraints`: o broker anterior deste projeto observou rejeição HTTP 400 desse campo no ambiente Google testado. O modelo fica configurado no pacote de setup da sessão.
 
-O primeiro uso exige um pareamento único por código de ativação. O broker troca esse código por uma credencial assinada HMAC-SHA256, com validade de 365 dias. O Android cifra a credencial com AES-GCM e guarda a chave criptográfica no Android Keystore. Quando restarem 30 dias, o aplicativo renova a credencial automaticamente.
+## Áudio
+- Entrada: PCM 16 kHz, mono, 16-bit, em blocos de 40 ms.
+- Saída: PCM 24 kHz, mono, 16-bit.
+- Captura via AudioRecord; reprodução via AudioTrack.
+- Usa fonte VOICE_COMMUNICATION e habilita cancelamento de eco/supressão de ruído quando disponíveis.
+- A transcrição de entrada e saída é solicitada na configuração da sessão.
+- Para Extended Thinking, o estado `interactionStatus` é acompanhado separadamente de `turnComplete`.
 
-O código de ativação não é persistido no telefone. A chave Gemini permanente não é enviada ao APK. A cada nova conversa, o aplicativo solicita ao broker um token efêmero Gemini de uso único.
+## Segurança e limites
+- A chave API é cifrada em repouso pelo Android Keystore, mas permanece acessível ao processo do app quando necessário. Em aparelho com root ou comprometido, nenhum segredo de cliente é inviolável.
+- Tokens efêmeros reduzem a exposição no WebSocket, mas não substituem autenticação segura de backend em aplicativos públicos ou multiusuário.
+- Não compartilhar o APK com uma chave configurada.
+- O app não realiza deploy, não ativa faturamento e não publica na Play Store.
+- Os testes de CI usam chave fictícia e não iniciam sessões reais. A validação ponta a ponta requer uma chave Gemini configurada pelo usuário.
 
-A credencial é stateless e vinculada logicamente ao UUID da instalação. Esta versão não oferece revogação individual persistente; a rotação de LAB_PAIRING_CODE invalida todas as credenciais emitidas com a chave anterior. O código antigo continua temporariamente aceito em /live/token para compatibilidade com APKs anteriores.
-
-## Segurança e custo
-
-- Não embutir GEMINI_API_KEY, LAB_PAIRING_CODE ou token de dispositivo no APK.
-- O segredo LAB_PAIRING_CODE é usado somente no enrollment inicial e para derivar a chave de assinatura no backend.
-- O token de dispositivo é bearer; o armazenamento criptografado reduz exposição em repouso, mas não equivale a autenticação multiusuário com revogação individual.
-- O rate limit atual é em memória e reinicia após reinicialização do processo.
-- /auth/enroll ainda não possui rate limit por IP; manter código de alta entropia e restringir o uso ao laboratório privado.
-- O uso da API Gemini depende das cotas e políticas da conta Google; não habilitar billing ou serviços pagos sem novo HUMAN_GATE.
-- O conteúdo de voz pode ser processado pelo provedor. Usar conteúdo fictício durante testes.
-
-## Critérios de aceitação
-
-1. /health responde 200 sem credencial.
-2. /auth/enroll exige o código correto e emite credencial assinada.
-3. /auth/refresh renova credencial válida e rejeita token inválido/expirado.
-4. /live/token exige credencial válida e retorna token efêmero.
-5. Android guarda o token criptografado no Keystore e não salva o código de ativação.
-6. A interface solicita o código somente no primeiro pareamento.
-7. Build APK e testes instrumentados passam.
-8. Sessão Gemini real só pode ser declarada validada depois de deploy autorizado do backend e teste ponta a ponta.
-
-## Estado de publicação
-
-A integração permanece em PR draft. Esta fase não altera variáveis do Render, não faz deploy, não faz merge em main e não publica release. Esses limites exigem gate separado.
+## Verificação automatizada
+- Teste instrumentado da tela inicial: presença do campo API Key e dos dois modelos.
+- Teste instrumentado do armazenamento: chave não aparece em texto puro no SharedPreferences, pode ser recuperada e removida.
+- Teste no emulador: instala o APK, abre a tela de configuração e captura evidência visual.
