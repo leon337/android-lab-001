@@ -2,18 +2,19 @@ PHASE 01 SMOKE / CI
 ===================
 
 PASS: Baseline tag and phase branch exist on origin.
-PASS: Six personalities available.
-PASS: Detail, tone, initiative and approach controls available.
-PASS: Chat header displays selected personality.
-PASS: SystemInstruction composed from profile and behavior.
-PASS: Release parser filters draft, prerelease and incomplete releases.
+PASS: Six personalities and four independent behavior controls available.
+PASS: Preferences persisted and included in Live systemInstruction.
+PASS: Release parser requires stable release, APK, manifest and SHA-256 digest.
+PASS: Assets restricted to HTTPS GitHub release path.
 PASS: APK SHA-256, package, version, minSdk and signer validation implemented.
-PASS: Download uses private app storage.
-PASS: FileProvider and REQUEST_INSTALL_PACKAGES declared.
+PASS: Private download and FileProvider handoff.
 PASS: Android installer confirmation required.
 PASS: Downgrade blocked.
-PASS: Release workflow is manual and requires persistent signing secrets.
-PASS: CI compiles application and instrumented test APK.
-PASS: Emulator/instrumentation tests run 41726424995.
-PASS: Emulator UI smoke passed.
-BLOCKED: Release secrets and one-time signature migration.
+PASS: Release workflow requires main, integrated tag and protected environment.
+PASS: Draft release is the default.
+PASS: Build APK workflow 41730256790.
+PASS: Eight instrumented tests in 41730261955.
+PASS: Final emulator workflow 41731678974.
+PASS: UI smoke found API key field and both Gemini 3.8 Live models.
+PASS: Screenshot and XML evidence published as workflow artifact.
+BLOCKED: Release signing secrets and one-time signature migration.

@@ -12,6 +12,10 @@
 | ADR-008 | Preferências em SharedPreferences | Dados pequenos e locais; não misturar com armazenamento cifrado da API Key. |
 | ADR-009 | Release assinada por keystore persistente | Impede atualizações por certificados efêmeros de runners. |
 | ADR-010 | Workflow manual de publicação | Nenhuma release pública é criada automaticamente por um push de tag. |
+| ADR-011 | Exigir digest SHA-256 do manifesto e URL GitHub confiável | O manifesto precisa ter integridade ancorada no asset publicado; URLs externas são rejeitadas. |
+| ADR-012 | Release draft por padrão e Environment com reviewer LEANDRO | A publicação pública precisa de revisão humana explícita. |
+| ADR-013 | Validar SemVer estrito e proteger versionCode contra overflow | Evita versões ambíguas ou inválidas para o Android. |
+| ADR-014 | Encerrar Pixel Launcher antes do smoke e limitar uiautomator dump | Mitiga instabilidade do emulador sem confundir ANR do launcher com falha do app. |
 
 ## Versões
 - MVP: `v1.0.0-mvp.1` → commit `934dcafed30f7eeba4eac32d14725aa73ac37152`.

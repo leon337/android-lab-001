@@ -1,0 +1,32 @@
+VALIDATION SUMMARY
+==================
+
+PASS: MCF README, current-state, operational protocol, DEC-050/051/052, LEO-DEC-004/005, skill registry and permission matrix consulted.
+PASS: Notebook leo-N43SM connected through Remote Desktop Commander.
+PASS: GitHub CLI authenticated as leon337.
+PASS: PR #2 and PR #3 current state checked.
+PASS: Baseline tag v1.0.0-mvp.1 verified.
+PASS: No GitHub Release currently published.
+PASS: Strict SemVer and versionCode overflow checks implemented.
+PASS: Release catalog requires manifest SHA-256 digest.
+PASS: Release asset URLs restricted to HTTPS GitHub repository path.
+PASS: Manifest read bounded to 64 KiB.
+PASS: Release workflow restricted to main and tag ancestor of main.
+PASS: Release workflow creates draft by default.
+PASS: GitHub Environment android-release created and verified.
+PASS: Required reviewer leon337 configured.
+PASS: Deployment branch policy main configured.
+PASS: Administrator bypass disabled.
+PASS: git diff --check.
+PASS: YAML parse for release workflow.
+PASS: Bash syntax for release workflow and emulator script.
+PASS: Build APK run 41730256790.
+PASS: Eight instrumented tests passed in run 41730261955.
+PASS: Emulator UI smoke run 41731678974.
+PASS: UI evidence contains API key field and both Gemini 3.8 Live models.
+PASS: Screenshot evidence generated at 1080x2400.
+BLOCKED: PKCS#12 keystore generation and GitHub Environment secret upload not completed in remote session.
+BLOCKED: Release workflow is not on main until PR integration.
+PENDING: PR #2 and PR #3 human review.
+NOT RUN: Merge, public release, OPPO installation or migration.
+NOT RUN: Any Gemini API key read/export/change.

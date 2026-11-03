@@ -1,0 +1,68 @@
+mission_id: MCF-GEMINI-LIVE-RELEASE-READINESS-001
+phase_id: PHASE-GEMINI-LIVE-RELEASE-READINESS-001
+cycle: 3
+state: PARCIALMENTE_PREPARADA_AGUARDANDO_ASSINATURA_E_REVISÃO_HUMANA
+risk_class: B
+permission_profile: SENSITIVE_CONTROLLED
+coordinator: MESTRE
+human_authority: LEANDRO
+repository: leon337/android-lab-001
+branch: feat/phase-01-version-updates-personalities
+code_head_commit: 77a53f3653b04f314741416399772931765a995f
+baseline_tag: v1.0.0-mvp.1
+pull_requests:
+  - number: 2
+    state: open
+    draft: true
+    base: main
+    head: feat/gemini-live-secure
+    human_review_required: true
+  - number: 3
+    state: open
+    draft: true
+    base: feat/gemini-live-secure
+    head: feat/phase-01-version-updates-personalities
+    depends_on: 2
+github_environment:
+  name: android-release
+  id: 26186012752
+  required_reviewer: leon337
+  prevent_self_review: false
+  can_admins_bypass: false
+  allowed_branch: main
+  branch_policy_id: 65417974
+signing:
+  keystore_created: false
+  environment_secrets_configured: false
+  release_workflow_on_main: false
+  public_release_created: false
+  migration_required: true
+  migration_authorized: false
+phone:
+  model: RMX3491
+  installed_version_name: 1.0.0
+  installed_version_code: 2
+  app_uninstalled: false
+  app_data_modified: false
+checks:
+  git_diff_check: PASS
+  yaml_parse: PASS
+  workflow_bash_syntax: PASS
+  emulator_script_bash_syntax: PASS
+  build_run_41730256790: PASS
+  instrumented_tests_run_41731678974: PASS
+  ui_smoke_run_41731678974: PASS
+  screenshot_evidence: PASS
+  code_self_review: PASS_WITH_RESERVATIONS
+  independent_mcf_audit: NOT_RUN_RUNTIME_UNAVAILABLE
+open_gates:
+  - id: G-01
+    owner: LEANDRO
+    description: "Generate persistent PKCS#12 signing keystore locally and configure four Environment secrets."
+  - id: G-02
+    owner: LEANDRO
+    description: "Review PR #2 and PR #3 before integration."
+  - id: G-03
+    owner: LEANDRO
+    description: "Authorize one-time phone migration only after signed v1.1.0 is verified."
+next_action: "Finish local signing procedure, complete human PR review, then prepare draft v1.1.0 release."

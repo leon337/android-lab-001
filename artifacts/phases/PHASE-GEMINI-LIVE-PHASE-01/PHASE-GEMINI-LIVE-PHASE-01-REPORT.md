@@ -1,45 +1,51 @@
 # Relatório — Fase 01
 
 ## Estado
-`IMPLEMENTADO_CI_APROVADO_AGUARDANDO_GATES_DE_ASSINATURA`
+`IMPLEMENTADO_CI_APROVADO_AGUARDANDO_GATES_DE_ASSINATURA_E_REVISÃO_HUMANA`
 
 ## Baseline e versionamento
-- Tag anotada e enviada: `v1.0.0-mvp.1`.
-- Commit de baseline: `934dcafed30f7eeba4eac32d14725aa73ac37152`.
+- Tag: `v1.0.0-mvp.1`.
+- Commit baseline: `934dcafed30f7eeba4eac32d14725aa73ac37152`.
 - Branch: `feat/phase-01-version-updates-personalities`.
-- Head: `eefbbb294d4be0420efb226d5bc1348956086ca7`.
-- PR #3: draft, base `feat/gemini-live-secure`, head `feat/phase-01-version-updates-personalities`.
-- Próxima versão: `1.1.0`, versionCode `10100`.
+- Head de código validado: `77a53f3653b04f314741416399772931765a995f`.
+- PR #3: draft, base `feat/gemini-live-secure`.
+- Versão alvo: `1.1.0`, versionCode `10100`.
 
 ## Implementação
 - Catálogo de personalidades com seis perfis.
 - Controles independentes de detalhe, tom, iniciativa e abordagem.
 - Preferências persistidas em SharedPreferences.
-- SystemInstruction composto por personalidade, comportamento e instruções adicionais.
+- GeminiLiveClient compõe systemInstruction a partir de personalidade, comportamento e instruções adicionais.
 - Catálogo de releases estáveis via GitHub Releases.
-- Manifesto de release e validação de SHA-256, packageName, versionName, versionCode, minSdk e certificado.
-- Download em armazenamento interno e instalação confirmada pelo Android via FileProvider.
+- Manifesto exige digest SHA-256; assets limitados a HTTPS do GitHub oficial.
+- Leitura do manifesto limitada a 64 KiB.
+- APK validado por SHA-256, packageName, versionName, versionCode, minSdk e certificado.
+- Download privado e instalação confirmada pelo Android via FileProvider.
 - Downgrade bloqueado.
-- Workflow manual para compilar, assinar e publicar releases.
-- README, changelog, ADR-001 e guia de configuração de assinatura.
+- SemVer estrito e versionCode com proteção contra overflow.
+- Workflow manual de release restrito a main e tag integrada, com draft por padrão.
+- GitHub Environment android-release com reviewer LEANDRO, branch policy main e bypass administrativo desabilitado.
+- README, changelog, ADR e security review atualizados.
 
 ## CI e validação
-- Build APK run `41725359823`: sucesso.
-- Teste Android em emulador run `41726424995`: sucesso.
-- Compilação do app e do pacote instrumentado: sucesso.
-- Testes instrumentados e smoke de UI no emulador: sucesso.
-- `git diff --check`: sucesso.
-- Parse YAML dos workflows: sucesso.
-- Uma primeira tentativa de teste falhou por referência de teste Compose inexistente (`assertExists`); corrigida para `fetchSemanticsNode()`. A execução final passou.
+- Build run `41730256790`: sucesso.
+- Emulator run `41730261955`: oito testes instrumentados passaram; smoke de UI falhou por ANR do Pixel Launcher.
+- Emulator run `41731111566`: cancelado durante diagnóstico do dump de UI.
+- Emulator run `41731678974`: sucesso completo; instrumentação e smoke de UI aprovados.
+- XML de evidência confirma campo da API Key, modelo Gemini 3.8 Live e Gemini 3.8 Live Extended Thinking.
+- Screenshot do emulador: 1080×2400.
+- `git diff --check`, YAML parse e `bash -n`: sucesso.
 
 ## Gates remanescentes
-1. Configurar os secrets `ANDROID_SIGNING_KEYSTORE_BASE64`, `ANDROID_SIGNING_STORE_PASSWORD`, `ANDROID_SIGNING_KEY_ALIAS` e `ANDROID_SIGNING_KEY_PASSWORD` no GitHub Actions.
-2. Publicar a primeira release estável assinada.
-3. O APK instalado no OPPO usa assinatura debug efêmera. A primeira migração para o certificado persistente exige desinstalação e perda dos dados locais/Android Keystore.
-4. A migração exige HUMAN_GATE específico dirigido a LEANDRO e recadastro da API Key.
-5. Nenhuma alteração ou desinstalação foi realizada no telefone nesta fase.
+1. Gerar keystore PKCS#12 persistente localmente.
+2. Cadastrar quatro secrets no GitHub Environment `android-release`.
+3. Revisar PR #2 e PR #3; ambos permanecem draft.
+4. A release workflow só ficará disponível em Actions após integração na `main`.
+5. Publicar primeiro uma release draft `v1.1.0` e validar APK/certificado.
+6. A migração do telefone exige desinstalação e perda de dados locais; requer HUMAN_GATE específico dirigido a LEANDRO.
 
 ## Segurança
 - Nenhuma chave API ou segredo de assinatura foi gravado no Git.
 - Nenhuma chave API foi lida, exportada ou alterada nesta fase.
+- Nenhuma alteração, instalação ou desinstalação foi realizada no telefone.
 - Nenhuma sessão Gemini Live foi iniciada pela automação desta fase.
