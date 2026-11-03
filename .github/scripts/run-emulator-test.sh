@@ -56,6 +56,29 @@ tap_text() {
   return 1
 }
 
+echo "=== Validando UI operacional e tratando avisos temporarios do launcher ==="
+READY=0
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  dump_ui "window-current.xml"
+  if find_point INPUT >/dev/null; then
+    echo "PASS: campo de anotacao acessivel (tentativa $attempt)"
+    READY=1
+    break
+  fi
+  if point=$(find_point 'Wait'); then
+    echo "AVISO TRANSITORIO: launcher travado; selecionando Wait em $point"
+    adb exec-out screencap -p > "$EVIDENCE_DIR/diagnostico-launcher-anr.png"
+    adb shell input tap $point
+    sleep 3
+    continue
+  fi
+  echo "UI ainda nao pronta; nova tentativa $attempt"
+  sleep 2
+done
+if [ "$READY" -ne 1 ]; then
+  echo "ERRO: o app nao ficou visivel em 10 tentativas" >&2
+  exit 1
+fi
 dump_ui "tela-inicial.xml"
 adb exec-out screencap -p > "$EVIDENCE_DIR/app-inicial.png"
 echo "=== Inserindo anotacao ficticia pelo Android virtual ==="
