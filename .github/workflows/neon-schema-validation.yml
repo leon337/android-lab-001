@@ -1,0 +1,83 @@
+name: Validar esquema Neon (PostgreSQL local)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/neon-db-setup-001
+    paths:
+      - 'db/**'
+      - '.github/workflows/neon-schema-validation.yml'
+permissions:
+  contents: read
+jobs:
+  validar-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: somente_teste_local_descartavel
+          POSTGRES_DB: android_lab_001
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d android_lab_001"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: postgres
+      PGPASSWORD: somente_teste_local_descartavel
+      PGDATABASE: android_lab_001
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar cliente PostgreSQL se necessario
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq postgresql-client
+          fi
+          psql --version
+      - name: Aplicar migracoes na instancia descartavel
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -f db/neon/001_create_notes.sql
+          psql -X -v ON_ERROR_STOP=1 -f db/neon/002_create_readonly_role.sql
+      - name: Verificar tabela e privilegios sem tocar na nuvem
+        shell: bash
+        run: |
+          set -euo pipefail
+          resultado="$(psql -X -A -t -v ON_ERROR_STOP=1 -c "SELECT (to_regclass('public.notes') IS NOT NULL AND has_table_privilege('android_lab_reader','public.notes','SELECT') AND NOT has_table_privilege('android_lab_reader','public.notes','INSERT') AND NOT has_table_privilege('android_lab_reader','public.notes','UPDATE') AND NOT has_table_privilege('android_lab_reader','public.notes','DELETE') AND NOT EXISTS (SELECT 1 FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.roleid JOIN pg_roles u ON u.oid=m.member WHERE r.rolname='neon_superuser' AND u.rolname='android_lab_reader'))::text")"
+          test "$resultado" = true
+          echo 'PASS: esquema e papel de leitura validados no PostgreSQL descartavel'
+      - name: Testar restricoes de notas
+        shell: bash
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+          INSERT INTO public.notes (content, suggested_summary, approved)
+          VALUES ('Nota ficticia para verificar o schema', 'Resumo ficticio', TRUE);
+          DO $test$
+          BEGIN
+            BEGIN
+              INSERT INTO public.notes (content) VALUES ('   ');
+              RAISE EXCEPTION 'Nota vazia foi aceita indevidamente';
+            EXCEPTION WHEN check_violation THEN NULL;
+            END;
+            BEGIN
+              INSERT INTO public.notes (content, approved) VALUES ('Nota sem sugestao', TRUE);
+              RAISE EXCEPTION 'Aprovacao sem resumo foi aceita indevidamente';
+            EXCEPTION WHEN check_violation THEN NULL;
+            END;
+          END
+          $test$;
+          ROLLBACK;
+          SQL
+          echo 'PASS: constraints validadas sem persistir dados'
