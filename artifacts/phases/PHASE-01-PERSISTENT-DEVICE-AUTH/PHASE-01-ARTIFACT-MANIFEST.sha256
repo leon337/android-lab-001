@@ -1,0 +1,21 @@
+97ce126aab052fb6b0bbe19d985060025a0fae3cedd0811c15598f4942592bb1  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-PLAN.md
+9b53ba0953c2a9064cf63c4eb0b8b1193bb5ebcd1e922462ecf226be60e6388e  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-REPORT.md
+211023581cd437d62ec352e2f27d2bf1be3df45c1bb7db7fb9a19f9798e99bb1  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-VALIDATION.txt
+2fb60b679e4f26e38ac725e31c915496fc1211d7851d93041bbf824fb569afcb  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-VALIDATION-FULL.txt
+6ba13991697af605c62be189685682716f98dfd272f9092922a06684be3761e3  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-SMOKE.txt
+227e3593556f9312d0b90fcdec07867484b2984bb5ab60e042e9b21ad04996d6  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-CHECKPOINT.yaml
+26fd9910b205c213e15dede1f5243c1f7d3847eef078e056ebd6c985f49d6b37  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-DECISIONS.md
+bdcee0afd1d7edd11711ef959d94e9594fa788774bda39409b8a4ce4944c419f  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/PHASE-01-MISSION-TRACE.md
+a8c43c9d763f74d05793477c9a24ff45082cc5e2d7e0ff1be17f50c6b957c794  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/SECURITY-REVIEW.md
+7317fcb1fa473c700b6ca23336dec3a32d8b62ebbc7b997eeba216826a49cf0a  artifacts/phases/PHASE-01-PERSISTENT-DEVICE-AUTH/README.md
+71ecd26b91383b893b5aeec24a4537caac4f92e2754f93d5c773c4f4456e134e  backend/README.md
+669cad79a6f5eab1b0c50bb6db706d2905ee095540cbf6c9cd1149ebd9e25596  backend/server.mjs
+42f89c2b37249361f1d1c7ebfaa77c8d1a1823ba2674ea3eb8994fac371363c0  backend/server.test.mjs
+64668335fabdc9fd3c02ae3f01a02e8fe5e78ce74412f5ce80ee42e676d3c1c2  docs/ANDROID-LAB-GEMINI-LIVE-004.md
+1981a3bd6eddb7d6c6668e924b1f854dd669d057e23fb0d42fc904f0662f56da  app/src/main/java/br/com/laboratorio/android/live/DeviceCredentialStore.kt
+fb38378f4f20b3dd7acd9bc58259f88c1bcc3e694432f22c0c072771dd2f5a0d  app/src/main/java/br/com/laboratorio/android/live/LiveAudioClient.kt
+36129ab15755e528869551b306a9be4ec541a305878b3244338ed9221f4a1d39  app/src/main/java/br/com/laboratorio/android/live/LiveVoicePanel.kt
+d952609801e79ac6b144d34ced0857b235383d2ef7a99549f84f369cc481fe91  app/src/androidTest/java/br/com/laboratorio/android/live/DeviceCredentialStoreInstrumentedTest.kt
+029c9f0642fc947f15eeb1fb82d16d598d8234f8e46cfc8fe7a35c622ec02ae6  .github/scripts/run-emulator-test.sh
+# External CI artifact (not stored in the repository): app-debug.apk, run 41698189589, SHA-256 49022acddbe9da829ae27896b1c5546b521da9eea0607f530d8099b5aed0c39b
+# Emulator evidence: run 41698195157; see PHASE-01-VALIDATION-FULL.txt for screenshot hashes and test XML.

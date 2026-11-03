@@ -1,0 +1,23 @@
+SMOKE TESTS — PHASE-01
+
+APROVADOS
+- Backend tests: 13/13.
+- APK debug: build success.
+- Android emulator: 5/5 testes instrumentados, 0 falhas, 0 erros.
+- Tela inicial do app carregada.
+- Campo de anotação acessível.
+- Sugestão determinística do Mock exibida.
+- Aprovação HITL registrada.
+- Capturas de resumo sugerido e aprovado publicadas no artefato do workflow.
+- Diálogo transitório do Pixel Launcher foi tratado selecionando Wait; o smoke continuou e concluiu success.
+- APK do commit fdd8b8c passou por varredura simples de strings em classes.dex sem encontrar padrões conhecidos de chave/código.
+
+PENDENTES
+- Sessão WebSocket Gemini real usando v1alpha.
+- Deploy autorizado das rotas /auth/enroll e /auth/refresh no Render.
+- Teste do novo APK no telefone físico.
+- Auditoria independente MCF e gate de Léo.
+- Remoção da compatibilidade legada após migração.
+
+LIMITES
+Token efêmero HTTP 200 não prova sessão WebSocket funcional. Mock/HITL não é IA real. Build, testes instrumentados, smoke de interface e teste manual de voz são evidências distintas.

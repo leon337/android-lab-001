@@ -4,6 +4,13 @@
 **Estratégia:** microfone Android em PCM 16 kHz → Live WebSocket → áudio do modelo PCM 24 kHz → alto-falante Android.
 **Backend:** Node.js no Render, com chave Gemini exclusivamente no servidor e tokens efêmeros de uso único.
 
+## Versões do protocolo
+
+- Provisionamento do token efêmero: REST https://generativelanguage.googleapis.com/v1beta/auth_tokens.
+- Conexão WebSocket com token efêmero: BidiGenerateContentConstrained em v1alpha.
+- A escolha de v1alpha segue o SDK oficial Google, que detecta o prefixo auth_tokens/, usa o método BidiGenerateContentConstrained, envia Authorization: Token ... e alerta que o suporte efêmero está em v1alpha.
+- O suporte a tokens efêmeros é experimental/preview. O endpoint correto precisa ser validado em uma sessão real antes de declarar integração funcional.
+
 ## Autenticação do dispositivo
 
 O primeiro uso exige um pareamento único por código de ativação. O broker troca esse código por uma credencial assinada HMAC-SHA256, com validade de 365 dias. O Android cifra a credencial com AES-GCM e guarda a chave criptográfica no Android Keystore. Quando restarem 30 dias, o aplicativo renova a credencial automaticamente.
@@ -18,6 +25,7 @@ A credencial é stateless e vinculada logicamente ao UUID da instalação. Esta 
 - O segredo LAB_PAIRING_CODE é usado somente no enrollment inicial e para derivar a chave de assinatura no backend.
 - O token de dispositivo é bearer; o armazenamento criptografado reduz exposição em repouso, mas não equivale a autenticação multiusuário com revogação individual.
 - O rate limit atual é em memória e reinicia após reinicialização do processo.
+- /auth/enroll ainda não possui rate limit por IP; manter código de alta entropia e restringir o uso ao laboratório privado.
 - O uso da API Gemini depende das cotas e políticas da conta Google; não habilitar billing ou serviços pagos sem novo HUMAN_GATE.
 - O conteúdo de voz pode ser processado pelo provedor. Usar conteúdo fictício durante testes.
 

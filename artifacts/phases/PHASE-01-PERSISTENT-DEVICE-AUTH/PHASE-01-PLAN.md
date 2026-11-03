@@ -71,3 +71,30 @@ Eliminar a digitação repetida do código compartilhado do laboratório, substi
 - :app:assembleDebug
 - :app:connectedDebugAndroidTest via GitHub Actions Android Emulator API 35
 - smoke de instalação/abertura no telefone via ADB Wi-Fi, sem alegar sessão Gemini real antes do deploy autorizado.
+
+## Seleção de competências MCF
+
+A matriz vigente recomenda, para mudança em agente/IA, a sequência:
+Mestre → Miriam → Tiago → Rafael → Ricardo → Júlia → Beatriz → Augusto → Emily → Léo → Gabriel.
+
+Para a execução desta fase também são necessárias as skills:
+- MCF-RECOVER-CONTEXT — Miriam;
+- MCF-IMPLEMENT-CHANGE — engenharia;
+- MCF-REVIEW-CODE — Vinícius/Lucas/Ricardo;
+- MCF-SECURITY-REVIEW — Ricardo/Júlia;
+- MCF-RUN-TESTS — Renato;
+- MCF-TRACE-MISSION — Augusto;
+- MCF-CLOSE-PHASE — Carmem/Emily/Léo/Mestre;
+- MCF-GIT-PR-RELEASE — Gabriel.
+
+**Disponibilidade real:** o local-agent-runtime não está instalado no notebook (command -v sem resultado) nem consta entre as ferramentas disponíveis nesta sessão. A skill MCF-EXECUTE-LOCAL-TEAM determina fallback fail-closed quando o executor está indisponível. Portanto, não atribuímos contribuições cognitivas independentes a esses agentes. MESTRE executou diretamente as operações comprovadas por ferramentas; as revisões independentes e o gate de Léo permanecem pendentes. A fase não será declarada conforme à ESEV completa enquanto esses gates não forem executados.
+
+## Ordem real observada
+
+1. MESTRE recuperou as fontes de continuidade e consultou o estado atual dos dois repositórios.
+2. MESTRE verificou branch, commits, PR e workflows pelo GitHub CLI/API.
+3. MESTRE usou MBC 0.5.0 para abrir e inspecionar visualmente o PR #2; o navegador estava conectado e a página do PR foi confirmada.
+4. MESTRE inspecionou o código e comparou o uso de WebSocket com o SDK oficial Google.
+5. MESTRE corrigiu a versão do endpoint WebSocket e enviou o commit fdd8b8c.
+6. MESTRE iniciou backend CI, build APK e testes instrumentados/smoke no emulador.
+7. O fechamento documental e o gate interno permanecem condicionados à conclusão do workflow e à revisão independente.

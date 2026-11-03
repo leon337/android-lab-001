@@ -1,0 +1,51 @@
+VALIDAÇÃO — PHASE-01
+Commit testado: fdd8b8ccae1abd3cdfa7ced0446d6d5248e01c57
+Branch: feat/gemini-live-secure
+PR: https://github.com/leon337/android-lab-001/pull/2 (OPEN / DRAFT)
+
+1. Backend
+   Run 41698184335 — SUCCESS
+   13 testes aprovados; chave do provedor simulada; sem quota Gemini real.
+   https://github.com/leon337/android-lab-001/actions/runs/41698184335
+
+2. Build APK
+   Run 41698189589 — SUCCESS
+   APK debug gerado: app-debug.apk
+   Tamanho: 11.733.317 bytes
+   SHA-256: 49022acddbe9da829ae27896b1c5546b521da9eea0607f530d8099b5aed0c39b
+   Varredura simples de strings em classes.dex: nenhum padrão conhecido de chave Google, LAB_PAIRING_CODE ou GEMINI_API_KEY.
+   https://github.com/leon337/android-lab-001/actions/runs/41698189589
+
+3. Emulador Android
+   Run 41698195157 — SUCCESS
+   Android API 35 / Android 15 / emulator-5554
+   5 testes instrumentados; 0 falhas; 0 erros; 0 ignorados.
+   https://github.com/leon337/android-lab-001/actions/runs/41698195157
+
+   Testes:
+   - descartarResumoVoltaAoEstadoSemSugestao — PASS
+   - painelLivePresenteMasConexaoBloqueadaSemPareamento — PASS
+   - criarResumoMockEAprovar — PASS
+   - contadorMostraEstadoInicialEIncrementaAposClique — PASS
+   - credencialFicaCifradaEPermaneceDisponivelNaProximaInstancia — PASS
+
+4. Smoke de interface
+   - Campo de anotação acessível — PASS
+   - Sugestão determinística do Mock exibida — PASS
+   - Aprovação HITL registrada — PASS
+   - Diálogos transitórios do Pixel Launcher foram tratados selecionando Wait.
+   - O job concluiu success apesar de mensagens não fatais de ADB e de encerramento do emulador.
+
+5. Protocolo Gemini
+   - Código Android aponta para BidiGenerateContentConstrained em v1alpha.
+   - Modelo: gemini-3.8-live-extended-thinking.
+   - Thinking level: LOW.
+   - Build/testes aprovados não substituem teste WebSocket real.
+
+6. Segurança e publicação
+   - Nenhum deploy Render.
+   - Nenhuma variável/segredo alterado.
+   - Nenhum merge em main.
+   - Nenhuma instalação do novo APK no telefone físico.
+   - Sessão Gemini real: NÃO VALIDADA.
+   - Auditoria independente MCF e gate de Léo: PENDENTES.
