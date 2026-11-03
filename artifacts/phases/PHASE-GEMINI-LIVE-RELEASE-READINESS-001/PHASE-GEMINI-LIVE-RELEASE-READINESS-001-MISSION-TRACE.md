@@ -28,7 +28,8 @@
 
 6. **MESTRE — registrou o PRF**
    - Commit de código testado: `77a53f3`.
-   - Commit final de documentação e evidências: `8e5967b`.
+   - Commit de documentação MCF: `8e5967b`.
+   - Commit final de validação e checkpoint: `dade6ed`.
    - Manifestos SHA-256 dos artefatos foram verificados.
 
 7. **MESTRE — tentou preparar assinatura**
