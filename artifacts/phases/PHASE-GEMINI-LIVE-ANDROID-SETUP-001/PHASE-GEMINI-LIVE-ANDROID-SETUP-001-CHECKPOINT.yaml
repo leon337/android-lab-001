@@ -1,0 +1,58 @@
+mission_id: MCF-GEMINI-LIVE-ANDROID-SETUP-001
+phase_id: PHASE-GEMINI-LIVE-ANDROID-SETUP-001
+cycle: 2
+state: ENTREGUE
+risk_class: B
+permission_profile: SENSITIVE_CONTROLLED
+coordinator: MESTRE
+human_authority: LEANDRO
+device:
+  host: leo-N43SM
+  model: RMX3491
+  android: "13"
+  adb_transport: adb-9a179f5d-xCYr1B._adb-tls-connect._tcp
+  connected_at_validation: true
+apk:
+  path: /home/leo/Downloads/gemini-live-latest/app-debug.apk
+  sha256: 3fa471425bb932b637828083dc7e1ae036fc9c03e3cf2abb60e0b6f81c432dcf
+  branch: feat/gemini-live-secure
+  source_sha: 934dcafed30f7eeba4eac32d14725aa73ac37152
+  installed_version_code: 2
+  installed_version_name: 1.0.0
+google:
+  project_name: android-lab-001-gemini-mobile
+  project_id: gen-lang-client-0649344407
+  key_name: android-lab-001-gemini-mobile-android-app
+  key_id: d281f5c4-40df-4384-8a1c-80e1d193f6fc
+  api_restriction: Gemini API
+  application_restriction: NONE
+  billing: FREE_NOT_ENABLED
+  configured_by_user: true
+  encrypted_preference_entry_verified: true
+  plaintext_prefix_check: false
+install:
+  old_version_uninstalled: true
+  uninstall_authorized_by_leandro: true
+  new_version_installed: true
+  package: br.com.laboratorio.android
+  data_of_old_install_erased: true
+conversation:
+  token_request: PASS
+  websocket_setup: PASS
+  input_transcription: PASS
+  model_response_text: PASS
+  mute: PASS
+  unmute: PASS
+  restart_and_reconnect: PASS
+  physical_speaker_quality: NOT_MEASURED
+open_findings:
+  - id: F-002
+    severity: MEDIUM
+    description: "Google API key application restriction is not configured; API restriction Gemini API is active."
+    owner: MESTRE
+  - id: F-003
+    severity: HIGH
+    description: "Current installed APK uses ephemeral CI debug signing; stable release signing migration is required before in-app updates can install."
+    owner: LEANDRO
+    required_action: "Configure persistent release-signing secrets and authorize one-time migration/reinstall; re-enter API key after migration."
+next_action: "Implement Phase 01 update manager and personality profiles on branch feat/phase-01-version-updates-personalities."

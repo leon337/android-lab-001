@@ -1,0 +1,20 @@
+PHASE 01 SMOKE / STATIC CHECK
+=============================
+
+PASS: Baseline tag v1.0.0-mvp.1 exists on origin.
+PASS: Phase branch pushed to origin.
+PASS: Personality catalog contains six presets.
+PASS: Behavior catalog contains detail, tone, initiative and approach controls.
+PASS: Settings screen exposes personality and behavior options.
+PASS: Chat header displays selected personality.
+PASS: Effective system instruction is composed for Live session.
+PASS: Update catalog requires stable release + APK + manifest.
+PASS: APK download is private and SHA-256 verified.
+PASS: APK package/version/minSdk/signer validated before installer.
+PASS: FileProvider and REQUEST_INSTALL_PACKAGES declared.
+PASS: User confirmation delegated to Android installer.
+PASS: Downgrade blocked.
+PASS: Release workflow is manual and requires persistent signing secrets.
+PASS: YAML parse and git diff --check.
+PENDING: GitHub build and instrumented test workflows.
+BLOCKED: Release signing secrets and one-time certificate migration.

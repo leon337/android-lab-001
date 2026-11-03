@@ -260,12 +260,13 @@ class GeminiLiveClient(
             .put("inputAudioTranscription", JSONObject())
             .put("outputAudioTranscription", JSONObject())
 
-        if (settings.systemPrompt.isNotBlank()) {
+        val systemInstruction = settings.effectiveSystemInstruction()
+        if (systemInstruction.isNotBlank()) {
             setup.put(
                 "systemInstruction",
                 JSONObject().put(
                     "parts",
-                    JSONArray().put(JSONObject().put("text", settings.systemPrompt)),
+                    JSONArray().put(JSONObject().put("text", systemInstruction)),
                 ),
             )
         }

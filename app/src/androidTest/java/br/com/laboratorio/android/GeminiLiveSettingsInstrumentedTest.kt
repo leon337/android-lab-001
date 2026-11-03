@@ -19,5 +19,10 @@ class GeminiLiveSettingsInstrumentedTest {
         rule.onNodeWithText("Gemini 3.8 Live (baixa latência)").assertIsDisplayed()
         rule.onNodeWithText("Gemini 3.8 Live Extended Thinking").assertIsDisplayed()
         rule.onNodeWithTag("settings-save").assertIsNotEnabled()
+        rule.onNodeWithText("Personalidade do assistente").assertIsDisplayed()
+        rule.onNodeWithText("Professor paciente").assertIsDisplayed()
+        rule.onNodeWithTag("personality-developer").assertIsDisplayed()
+        rule.onNodeWithText("Comportamento").assertIsDisplayed()
+        rule.onNodeWithTag("open-updates").assertIsDisplayed()
     }
 }

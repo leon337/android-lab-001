@@ -1,0 +1,26 @@
+VALIDATION SUMMARY
+==================
+
+PASS: MCF canonical repository consulted; protocol and skill registry read.
+PASS: Current GitHub state checked: PR #2 draft; latest app commit 934dcaf.
+PASS: Baseline tag v1.0.0-mvp.1 created and pushed.
+PASS: Phase branch feat/phase-01-version-updates-personalities created and pushed.
+PASS: Personality catalog added with six presets.
+PASS: Four independent behavioral controls added.
+PASS: LiveSettings persists personality and behavior selections.
+PASS: GeminiLiveClient composes and sends effective systemInstruction.
+PASS: GitHub Releases parser filters draft/prerelease/invalid releases.
+PASS: Update flow checks package, version, minSdk, SHA-256 and signing certificate.
+PASS: Download is stored in app-private files and passed through FileProvider.
+PASS: Android install permission and user-confirmed installer flow added.
+PASS: Downgrade blocked.
+PASS: Manual release workflow added; release signing secrets are required and validated.
+PASS: README, CHANGELOG, ADR-001 and phase docs added.
+PASS: git diff --check.
+PASS: YAML parse for release/build/test workflows.
+PENDING: GitHub CI build and instrumented tests.
+PENDING: Code review / draft PR creation.
+BLOCKED: Release signing secrets are not configured.
+BLOCKED: First stable-signature migration requires a new HUMAN_GATE and re-entry of API key.
+NOT RUN: Install or replace the currently installed OPPO application.
+NOT RUN: Any Gemini Live session during this implementation phase.
