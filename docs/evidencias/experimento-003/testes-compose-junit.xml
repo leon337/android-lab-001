@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="br.com.laboratorio.android.AssistenteInstrumentadoTest" tests="3" failures="0" errors="0" skipped="0" time="20.2" timestamp="2026-11-03T14:23:08" hostname="localhost">
+  <properties>
+    <property name="device" value="emulator-5554 - 15" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="descartarResumoVoltaAoEstadoSemSugestao" classname="br.com.laboratorio.android.AssistenteInstrumentadoTest" time="9.135" />
+  <testcase name="criarResumoMockEAprovar" classname="br.com.laboratorio.android.AssistenteInstrumentadoTest" time="4.04" />
+  <testcase name="contadorMostraEstadoInicialEIncrementaAposClique" classname="br.com.laboratorio.android.ContadorInstrumentadoTest" time="3.642" />
+</testsuite>
