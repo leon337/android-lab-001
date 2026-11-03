@@ -1,28 +1,37 @@
-# Android Lab — Integração Gemini Live Extended Thinking (fase separada)
+# Android Lab — Gemini Live Extended Thinking
 
-**Modelo:** `gemini-3.8-live-extended-thinking` com thinking level LOW.
-**Conta Gemini:** projeto `android-lab-001-gemini` ID `gen-lang-client-0423414497`.
-**Estratégia:** microfone Android em PCM 16 kHz -> Live WebSocket usando token temporário -> áudio do modelo PCM 24 kHz -> alto-falante Android.
-**Backend:** Node.js `backend/server.mjs`, chave Gemini apenas em variável de ambiente do servidor, autenticação por código de laboratório informado ao abrir o app e nunca persistido em BuildConfig.
+**Modelo:** gemini-3.8-live-extended-thinking, thinking level LOW.
+**Estratégia:** microfone Android em PCM 16 kHz → Live WebSocket → áudio do modelo PCM 24 kHz → alto-falante Android.
+**Backend:** Node.js no Render, com chave Gemini exclusivamente no servidor e tokens efêmeros de uso único.
 
-## Restrições de segurança e custo
+## Autenticação do dispositivo
 
-- Não embutir `GEMINI_API_KEY` no APK ou no GitHub; token permanente não vai ao telefone.
-- Proteger o token broker por segredo de pareamento, usado apenas como MVP privado de um usuário; não é autenticação escalável de produção.
-- Free Tier Gemini sujeito a cotas e privacidade: conteúdo da conta de nível gratuito pode ser usado pelo provedor para melhorar produtos; utilizar falas fictícias.
-- Não habilitar billing, Firebase, Neon AI Gateway ou recursos pagos.
-- A Fase A segue pendente de aprovação humana; o fluxo Mock original mantém seus testes.
+O primeiro uso exige um pareamento único por código de ativação. O broker troca esse código por uma credencial assinada HMAC-SHA256, com validade de 365 dias. O Android cifra a credencial com AES-GCM e guarda a chave criptográfica no Android Keystore. Quando restarem 30 dias, o aplicativo renova a credencial automaticamente.
+
+O código de ativação não é persistido no telefone. A chave Gemini permanente não é enviada ao APK. A cada nova conversa, o aplicativo solicita ao broker um token efêmero Gemini de uso único.
+
+A credencial é stateless e vinculada logicamente ao UUID da instalação. Esta versão não oferece revogação individual persistente; a rotação de LAB_PAIRING_CODE invalida todas as credenciais emitidas com a chave anterior. O código antigo continua temporariamente aceito em /live/token para compatibilidade com APKs anteriores.
+
+## Segurança e custo
+
+- Não embutir GEMINI_API_KEY, LAB_PAIRING_CODE ou token de dispositivo no APK.
+- O segredo LAB_PAIRING_CODE é usado somente no enrollment inicial e para derivar a chave de assinatura no backend.
+- O token de dispositivo é bearer; o armazenamento criptografado reduz exposição em repouso, mas não equivale a autenticação multiusuário com revogação individual.
+- O rate limit atual é em memória e reinicia após reinicialização do processo.
+- O uso da API Gemini depende das cotas e políticas da conta Google; não habilitar billing ou serviços pagos sem novo HUMAN_GATE.
+- O conteúdo de voz pode ser processado pelo provedor. Usar conteúdo fictício durante testes.
 
 ## Critérios de aceitação
 
-1. API /health pública responde 200 sem expor segredo.
-2. API /live/token retorna 401 sem credencial; só emite token com código de acesso.
-3. Android solicita permissão de microfone, obtém token, abre WebSocket v1beta para `gemini-3.8-live-extended-thinking`, envia áudio PCM e reproduz áudio recebido.
-4. Build APK e testes instrumentados aprovados no emulador; teste real exige configurar credenciais protegidas no backend e gerar sessão Live efetiva.
-5. Pull request draft, sem merge automático na main, sujeito a HUMAN_GATE.
+1. /health responde 200 sem credencial.
+2. /auth/enroll exige o código correto e emite credencial assinada.
+3. /auth/refresh renova credencial válida e rejeita token inválido/expirado.
+4. /live/token exige credencial válida e retorna token efêmero.
+5. Android guarda o token criptografado no Keystore e não salva o código de ativação.
+6. A interface solicita o código somente no primeiro pareamento.
+7. Build APK e testes instrumentados passam.
+8. Sessão Gemini real só pode ser declarada validada depois de deploy autorizado do backend e teste ponta a ponta.
 
-Sem o passo 4 de sessão Live real, a integração não deve ser relatada como ponta a ponta concluída.
+## Estado de publicação
 
-## Correção de compatibilidade com tokens efêmeros
-
-A documentação oficial da API Live indica o endpoint WebSocket `BidiGenerateContentConstrained` (v1beta) para sessões com token efêmero, diferentemente do endpoint tradicional `BidiGenerateContent`. Ajustado no cliente Android em 2026-11-03.\n\n## Compatibilidade do token efemero (2026-11-03)\n\nO Google retornou HTTP 400 ao receber liveConnectConstraints. O broker passou a utilizar formato minimo com uso unico e expiracao curta. O modelo continua definido no setup de sessao pelo Android; o token nao fica restrito ao modelo, e o prototipo permanece privado com codigo de pareamento.\n
+A integração permanece em PR draft. Esta fase não altera variáveis do Render, não faz deploy, não faz merge em main e não publica release. Esses limites exigem gate separado.
