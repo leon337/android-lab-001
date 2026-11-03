@@ -25,4 +25,4 @@ Sem o passo 4 de sessão Live real, a integração não deve ser relatada como p
 
 ## Correção de compatibilidade com tokens efêmeros
 
-A documentação oficial da API Live indica o endpoint WebSocket `BidiGenerateContentConstrained` (v1beta) para sessões com token efêmero, diferentemente do endpoint tradicional `BidiGenerateContent`. Ajustado no cliente Android em 2026-11-03.
+A documentação oficial da API Live indica o endpoint WebSocket `BidiGenerateContentConstrained` (v1beta) para sessões com token efêmero, diferentemente do endpoint tradicional `BidiGenerateContent`. Ajustado no cliente Android em 2026-11-03.\n\n## Compatibilidade do token efemero (2026-11-03)\n\nO Google retornou HTTP 400 ao receber liveConnectConstraints. O broker passou a utilizar formato minimo com uso unico e expiracao curta. O modelo continua definido no setup de sessao pelo Android; o token nao fica restrito ao modelo, e o prototipo permanece privado com codigo de pareamento.\n

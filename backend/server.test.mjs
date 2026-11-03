@@ -18,7 +18,7 @@ test('token exige credencial de pareamento',async()=>serve({},async base=>{
 test('nao emite token sem configuracao do provedor',async()=>serve({env:{GEMINI_API_KEY:''}},async base=>{
   const r=await fetch(base+'/live/token',{method:'POST',headers:{Authorization:`Bearer ${CODE}`}});assert.equal(r.status,503);
 }));
-test('token de sessao usa modelo e restricoes',async()=>{
+test('token de sessao usa apenas TTL e limite de uso',async()=>{
   let sent;
   await serve({fetcher:async(url,opts)=>{sent={url,opts};return {ok:true,json:async()=>({name:'ephemeral-test-token'})};}},async base=>{
     const r=await fetch(base+'/live/token',{method:'POST',headers:{Authorization:`Bearer ${CODE}`}});
@@ -27,7 +27,9 @@ test('token de sessao usa modelo e restricoes',async()=>{
   assert.equal(sent.opts.headers['x-goog-api-key'],TEST_KEY);
   const payload=JSON.parse(sent.opts.body);
   assert.equal(payload.uses,1);
-  assert.equal(payload.liveConnectConstraints.model,'models/gemini-3.8-live-extended-thinking');
+  assert.equal(payload.liveConnectConstraints,undefined);
+  assert.equal(typeof payload.expireTime,'string');
+  assert.equal(typeof payload.newSessionExpireTime,'string');
 });
 test('falha upstream nao expoe chave',async()=>serve({fetcher:async()=>({ok:false,status:403})},async base=>{
   const r=await fetch(base+'/live/token',{method:'POST',headers:{Authorization:`Bearer ${CODE}`}});

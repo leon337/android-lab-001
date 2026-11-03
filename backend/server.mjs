@@ -48,7 +48,6 @@ export function makeServer({ env = process.env, fetcher = fetch, clock = Date.no
           uses: 1,
           newSessionExpireTime: new Date(now + 60000).toISOString(),
           expireTime: new Date(now + 30 * 60000).toISOString(),
-          liveConnectConstraints: { model: `models/${MODEL}`, config: {responseModalities:['AUDIO']} }
         }),
         signal: AbortSignal.timeout(12000)
       });
