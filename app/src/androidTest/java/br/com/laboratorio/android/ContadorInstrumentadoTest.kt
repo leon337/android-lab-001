@@ -7,6 +7,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -39,11 +40,11 @@ class ContadorInstrumentadoTest {
     @Test
     fun contadorMostraEstadoInicialEIncrementaAposClique() {
         composeRule.onNodeWithText("Laboratório Android").assertIsDisplayed()
-        composeRule.onNodeWithText("Interações: 0").assertIsDisplayed()
+        composeRule.onNodeWithText("Interações: 0").performScrollTo().assertIsDisplayed()
         capturarTela("contador-antes.png")
 
-        composeRule.onNodeWithText("Testar interação").performClick()
-        composeRule.onNodeWithText("Interações: 1").assertIsDisplayed()
+        composeRule.onNodeWithText("Testar interação").performScrollTo().performClick()
+        composeRule.onNodeWithText("Interações: 1").performScrollTo().assertIsDisplayed()
         capturarTela("contador-depois.png")
     }
 }
