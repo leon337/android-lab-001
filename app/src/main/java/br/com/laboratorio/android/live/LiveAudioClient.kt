@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 
 private const val LIVE_MODEL = "gemini-3.8-live-extended-thinking"
-private const val GEMINI_SOCKET = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained"
+private const val GEMINI_SOCKET = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained"
 private const val DEVICE_REFRESH_WINDOW_SECONDS = 30L * 24L * 60L * 60L
 
 data class LiveUiState(
