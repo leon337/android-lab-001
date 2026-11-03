@@ -2,6 +2,7 @@ package br.com.laboratorio.android.live
 
 import android.Manifest
 import android.content.Context
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFormat
@@ -180,9 +181,10 @@ class LiveAudioClient(context: Context) {
                 starting = true,
                 requiresPairing = false
             )
+            // O SDK oficial usa access_token na query para credenciais auth_tokens/*.
+            val liveUrl = "$GEMINI_SOCKET?access_token=${Uri.encode(token)}"
             val request = Request.Builder()
-                .url(GEMINI_SOCKET)
-                .header("Authorization", "Token $token")
+                .url(liveUrl)
                 .build()
             socket = http.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -220,12 +222,21 @@ class LiveAudioClient(context: Context) {
                                     )
                             )
                     )
-                    webSocket.send(setup.toString())
                     _state.value = _state.value.copy(
                         status = "Aguardando inicialização da sessão…",
                         starting = true,
                         requiresPairing = false
                     )
+                    if (!webSocket.send(setup.toString())) {
+                        setupTimeoutJob?.cancel()
+                        preserveTerminalStatus = true
+                        _state.value = _state.value.copy(
+                            status = "Não foi possível enviar a configuração inicial ao Gemini.",
+                            connected = false,
+                            starting = false
+                        )
+                        webSocket.close(1011, "Falha ao enviar setup")
+                    }
                 }
 
                 override fun onMessage(webSocket: WebSocket, text: String) {
@@ -241,8 +252,9 @@ class LiveAudioClient(context: Context) {
                     haltAudio()
                     if (!preserveTerminalStatus) {
                         val httpStatus = response?.code?.let { " HTTP $it" }.orEmpty()
+                        val detail = sanitizeProviderMessage(t.message ?: t.javaClass.simpleName).take(90)
                         _state.value = _state.value.copy(
-                            status = "Falha na sessão$httpStatus: ${t.message?.take(90) ?: "erro de conexão"}",
+                            status = "Falha na sessão$httpStatus: $detail",
                             connected = false,
                             starting = false
                         )
@@ -318,6 +330,13 @@ class LiveAudioClient(context: Context) {
         return DeviceCredential(token, expiresAt)
     }
 
+    private fun sanitizeProviderMessage(message: String): String = message
+        .replace(Regex("""(?i)access_token=[^&\s]+"""), "access_token=[oculto]")
+        .replace(Regex("""(?i)auth_tokens/[A-Za-z0-9_-]+"""), "auth_tokens/[oculto]")
+        .replace(Regex("""AIza[\w-]+"""), "[segredo oculto]")
+        .replace(Regex("""(?i)bearer\s+\S+"""), "Bearer [credencial oculta]")
+        .take(180)
+
     private fun processMessage(text: String) {
         val packet = JSONObject(text)
         val apiError = packet.optJSONObject("error")
@@ -327,10 +346,9 @@ class LiveAudioClient(context: Context) {
             preserveTerminalStatus = true
             val code = apiError.optInt("code", 0)
             val status = apiError.optString("status", "ERRO")
-            val message = apiError.optString("message", "O Google recusou a configuração da sessão.")
-                .replace(Regex("AIza[\\w-]+"), "[segredo oculto]")
-                .replace(Regex("(?i)bearer\\s+\\S+"), "Bearer [credencial oculta]")
-                .take(180)
+            val message = sanitizeProviderMessage(
+                apiError.optString("message", "O Google recusou a configuração da sessão.")
+            )
             _state.value = _state.value.copy(
                 status = "Gemini recusou a sessão ($code $status): $message",
                 connected = false,
