@@ -3,33 +3,28 @@
 Missão MCF: `MCF-GEMINI-LIVE-PHASE-01`
 
 ## Resultado atual
-`IMPLEMENTADO_AGUARDANDO_CI_E_REVIEW`
+`IMPLEMENTADO_CI_APROVADO_AGUARDANDO_GATES_DE_ASSINATURA`
 
-## Escopo entregue no código
+## Entregas
 - Versionamento e catálogo de releases.
-- Seleção de versão.
-- Download privado, SHA-256, verificação de pacote, versão e certificado.
+- Seleção de versões estáveis.
+- Download privado, SHA-256 e verificação de pacote, versão, minSdk e certificado.
 - Instalação confirmada pelo Android.
 - Seis personalidades e quatro controles comportamentais.
-- Persistência das preferências.
-- Workflow manual de release assinado.
-- README, changelog e ADR-001.
+- Persistência das preferências e systemInstruction composto.
+- Workflow manual de release assinada.
+- Documentação, changelog e ADR-001.
 
-## Branch e baseline
-- Base: `934dcafed30f7eeba4eac32d14725aa73ac37152`.
-- Tag: `v1.0.0-mvp.1`.
+## Evidências
+- Tag MVP: `v1.0.0-mvp.1`.
 - Branch: `feat/phase-01-version-updates-personalities`.
-- Versão alvo: `1.1.0` / `10100`.
+- Head: `eefbbb294d4be0420efb226d5bc1348956086ca7`.
+- PR #3 draft.
+- Build: run `41725359823`.
+- Instrumentação/emulador: run `41726424995`.
 
-## Ordem de leitura
-1. PLAN
-2. REPORT
-3. VALIDATION
-4. CHECKPOINT
-5. DECISIONS
-6. ARTIFACT-MANIFEST.sha256
-
-## GATES
+## Gates
 - Configurar os quatro secrets de assinatura no GitHub Actions.
-- Autorizar a migração única do certificado no telefone; a operação apaga dados locais e exige recadastrar a API Key.
-- Não executar esses gates automaticamente.
+- Publicar v1.1.0.
+- Autorizar migração única do certificado no telefone; a operação apaga dados locais e exige recadastrar a API Key.
+- Nenhum desses gates será executado automaticamente.

@@ -1,20 +1,19 @@
-PHASE 01 SMOKE / STATIC CHECK
-=============================
+PHASE 01 SMOKE / CI
+===================
 
-PASS: Baseline tag v1.0.0-mvp.1 exists on origin.
-PASS: Phase branch pushed to origin.
-PASS: Personality catalog contains six presets.
-PASS: Behavior catalog contains detail, tone, initiative and approach controls.
-PASS: Settings screen exposes personality and behavior options.
+PASS: Baseline tag and phase branch exist on origin.
+PASS: Six personalities available.
+PASS: Detail, tone, initiative and approach controls available.
 PASS: Chat header displays selected personality.
-PASS: Effective system instruction is composed for Live session.
-PASS: Update catalog requires stable release + APK + manifest.
-PASS: APK download is private and SHA-256 verified.
-PASS: APK package/version/minSdk/signer validated before installer.
+PASS: SystemInstruction composed from profile and behavior.
+PASS: Release parser filters draft, prerelease and incomplete releases.
+PASS: APK SHA-256, package, version, minSdk and signer validation implemented.
+PASS: Download uses private app storage.
 PASS: FileProvider and REQUEST_INSTALL_PACKAGES declared.
-PASS: User confirmation delegated to Android installer.
+PASS: Android installer confirmation required.
 PASS: Downgrade blocked.
 PASS: Release workflow is manual and requires persistent signing secrets.
-PASS: YAML parse and git diff --check.
-PENDING: GitHub build and instrumented test workflows.
-BLOCKED: Release signing secrets and one-time certificate migration.
+PASS: CI compiles application and instrumented test APK.
+PASS: Emulator/instrumentation tests run 41726424995.
+PASS: Emulator UI smoke passed.
+BLOCKED: Release secrets and one-time signature migration.

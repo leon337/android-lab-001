@@ -1,7 +1,7 @@
 mission_id: MCF-GEMINI-LIVE-PHASE-01
 phase_id: PHASE-GEMINI-LIVE-PHASE-01
-cycle: 1
-state: IMPLEMENTADO_AGUARDANDO_CI_E_REVIEW
+cycle: 2
+state: IMPLEMENTADO_CI_APROVADO_AGUARDANDO_GATES_DE_ASSINATURA
 risk_class: B
 permission_profile: SCOPED_WRITE
 coordinator: MESTRE
@@ -10,24 +10,26 @@ repository: leon337/android-lab-001
 base_commit: 934dcafed30f7eeba4eac32d14725aa73ac37152
 baseline_tag: v1.0.0-mvp.1
 branch: feat/phase-01-version-updates-personalities
+head_commit: eefbbb294d4be0420efb226d5bc1348956086ca7
+pull_request:
+  number: 3
+  state: open
+  draft: true
+  base: feat/gemini-live-secure
+  head: feat/phase-01-version-updates-personalities
 target_version:
   version_name: 1.1.0
   version_code: 10100
-scope:
-  - version_catalog_and_selection
-  - sha256_and_signer_validation
-  - user_confirmed_android_install
-  - six_personality_presets
-  - four_behavior_controls
-  - persisted_personality_preferences
-  - release_workflow
 checks:
   git_diff_check: PASS
   yaml_parse: PASS
-  kotlin_brace_scan: PASS
-  github_ci_build: PENDING
-  instrumented_tests: PENDING
-  code_review: PENDING
+  build_workflow_run: "41725359823: PASS"
+  emulator_test_run: "41726424995: PASS"
+  app_compilation: PASS
+  instrumented_test_compilation: PASS
+  instrumented_tests: PASS
+  emulator_ui_smoke: PASS
+  code_review: MESTRE_STATIC_REVIEW_COMPLETE
   physical_install: NOT_RUN
 signing:
   keystore_created: false
@@ -46,8 +48,8 @@ phone:
 open_gates:
   - id: G-01
     owner: LEANDRO
-    description: "Configure persistent signing keystore and GitHub Actions secrets."
+    description: "Configure persistent signing keystore and four GitHub Actions secrets."
   - id: G-02
     owner: LEANDRO
     description: "Authorize one-time uninstall/reinstall migration to persistent release certificate; re-enter API key."
-next_action: "Commit/push implementation, run GitHub Actions build and emulator tests, create draft PR."
+next_action: "Review PR #3; after merge configure signing secrets, publish v1.1.0, and request HUMAN_GATE before phone migration."
