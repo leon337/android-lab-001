@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.max
 
 private const val LIVE_MODEL = "gemini-3.8-live-extended-thinking"
-private const val GEMINI_SOCKET = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent"
+private const val GEMINI_SOCKET = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained"
 
 data class LiveUiState(
     val status: String = "Desconectado",

@@ -22,3 +22,7 @@
 5. Pull request draft, sem merge automático na main, sujeito a HUMAN_GATE.
 
 Sem o passo 4 de sessão Live real, a integração não deve ser relatada como ponta a ponta concluída.
+
+## Correção de compatibilidade com tokens efêmeros
+
+A documentação oficial da API Live indica o endpoint WebSocket `BidiGenerateContentConstrained` (v1beta) para sessões com token efêmero, diferentemente do endpoint tradicional `BidiGenerateContent`. Ajustado no cliente Android em 2026-11-03.
