@@ -13,11 +13,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Preparar SDK Android no runner Ubuntu
-        run: |
-          sdkmanager --version
-          printf 'y\n%.0s' {1..20} | sdkmanager --licenses > /dev/null
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: 'false'
+      - name: Instalar SDK Android para compilacao
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
