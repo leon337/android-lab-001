@@ -1,80 +1,133 @@
-# Configuração de assinatura de releases Android
+# Assinatura permanente de releases Android
 
-O pipeline de release exige uma chave de assinatura persistente. A chave privada nunca deve ser commitada no Git, enviada em chat ou armazenada em artefatos públicos.
+## Estado verificado em 2026-11-03
 
-## 1. Gerar keystore PKCS#12 em máquina confiável
+**Estado: preparação parcial.**
 
-Com Java/Android Studio instalado:
+- GitHub Environment `android-release`: criado.
+- Reviewer obrigatório: LEANDRO (`leon337`).
+- Branch policy: somente `main`.
+- Bypass de administradores: desabilitado.
+- Keystore PKCS#12: ainda não gerado.
+- Secrets do ambiente: ainda não cadastrados.
+- O procedimento local de geração e cadastro ainda precisa ser concluído manualmente; nenhum keystore ou secret foi criado.
 
-```bash
-keytool -genkeypair -v \
-  -keystore gemini-live-release.p12 \
-  -storetype PKCS12 \
-  -alias gemini-live \
-  -keyalg RSA \
-  -keysize 3072 \
-  -validity 10000
-```
+## Objetivo
 
-Use uma senha forte e guarde uma cópia offline do arquivo e das senhas. A senha do keystore e da chave podem ser iguais.
+Usar uma chave de assinatura persistente para todas as versões Android. O arquivo privado não pode entrar no Git, no APK, em logs ou em artefatos públicos.
 
-## 2. Codificar o arquivo para GitHub Actions
+## Preparação local do keystore
 
-Linux/macOS:
+No notebook Ubuntu, abra um terminal e execute os passos abaixo. Não envie a senha ou o conteúdo Base64 pelo chat.
 
-```bash
-base64 -w 0 gemini-live-release.p12
-```
-
-macOS sem `-w`:
+1. Crie diretórios privados:
 
 ```bash
-base64 < gemini-live-release.p12 | tr -d '\\n'
+mkdir -p "$HOME/.local/share/gemini-live-signing" "$HOME/Backups/gemini-live-signing"
+chmod 700 "$HOME/.local/share/gemini-live-signing" "$HOME/Backups/gemini-live-signing"
+WORK="$(mktemp -d /dev/shm/gemini-live-signing.XXXXXX)"
+chmod 700 "$WORK"
 ```
 
-PowerShell:
+2. Gere uma chave RSA 3072 protegida por senha. O OpenSSL solicitará a senha no terminal:
 
-```powershell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("gemini-live-release.p12"))
+```bash
+openssl genpkey -algorithm RSA -aes-256-cbc \
+  -pkeyopt rsa_keygen_bits:3072 \
+  -out "$WORK/private-key.pem"
 ```
 
-O texto base64 é material secreto porque permite reconstruir a chave privada.
+3. Gere o certificado público:
 
-## 3. Criar secrets no GitHub
+```bash
+openssl req -new -x509 \
+  -key "$WORK/private-key.pem" \
+  -out "$WORK/release-certificate.pem" \
+  -sha256 -days 10000 \
+  -subj "/CN=Gemini Live Android Release/O=Leandro Android Apps/C=BR"
+```
+
+4. Exporte o PKCS#12 com alias `gemini-live`. Informe a senha da chave e defina uma senha forte para o keystore; use a mesma senha para a chave e o keystore:
+
+```bash
+openssl pkcs12 -export \
+  -out "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12" \
+  -inkey "$WORK/private-key.pem" \
+  -in "$WORK/release-certificate.pem" \
+  -name gemini-live \
+  -keypbe AES-256-CBC -certpbe AES-256-CBC -macalg sha256
+chmod 600 "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12"
+cp "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12" \
+  "$HOME/Backups/gemini-live-signing/gemini-live-release.p12"
+chmod 600 "$HOME/Backups/gemini-live-signing/gemini-live-release.p12"
+```
+
+5. Valide o arquivo e registre o fingerprint público:
+
+```bash
+openssl pkcs12 -in "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12" -noout
+openssl pkcs12 -in "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12" \
+  -clcerts -nokeys -out "$HOME/.local/share/gemini-live-signing/release-certificate.pem"
+openssl x509 -in "$HOME/.local/share/gemini-live-signing/release-certificate.pem" \
+  -noout -subject -enddate -fingerprint -sha256
+```
+
+6. Guarde a senha no GNOME Passwords and Keys (GNOME Keyring), com o rótulo `Gemini Live Android release signing password`. Depois remova a chave PEM temporária e encerre o diretório de trabalho:
+
+```bash
+rm -rf "$WORK"
+```
+
+A pasta `~/Backups` está no mesmo disco físico do notebook. Faça também uma cópia offline em mídia externa segura. O arquivo PKCS#12 é protegido por senha, mas perder a senha ou a chave privada impede futuras atualizações assinadas.
+
+## Secrets do GitHub Environment
 
 No repositório `leon337/android-lab-001`:
 
-Settings → Secrets and variables → Actions → New repository secret.
+Settings → Environments → `android-release` → Environment secrets.
 
-Criar exatamente:
+Cadastrar exatamente:
 
-| Nome | Valor |
+| Nome | Conteúdo |
 |---|---|
-| `ANDROID_SIGNING_KEYSTORE_BASE64` | Conteúdo base64 do arquivo PKCS#12 |
-| `ANDROID_SIGNING_STORE_PASSWORD` | Senha do keystore |
+| `ANDROID_SIGNING_KEYSTORE_BASE64` | saída Base64 do arquivo PKCS#12 |
+| `ANDROID_SIGNING_STORE_PASSWORD` | senha do PKCS#12 |
 | `ANDROID_SIGNING_KEY_ALIAS` | `gemini-live` |
-| `ANDROID_SIGNING_KEY_PASSWORD` | Senha da chave |
+| `ANDROID_SIGNING_KEY_PASSWORD` | senha da chave PKCS#12 |
 
-Não cole os valores no chat. Não faça commit do arquivo .p12, certificado privado ou senhas.
+Para obter o Base64 no notebook, use `base64 -w0 "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12"` e cole diretamente no secret correspondente. Não armazene o texto Base64 em arquivos do projeto.
 
-## 4. Publicar uma versão
+Não use repository secrets: o workflow consome os secrets do ambiente protegido `android-release`.
 
-Depois que a Fase 01 estiver revisada e integrada:
-1. Criar e enviar a tag estável `v1.1.0`.
-2. Abrir Actions → **Publicar versão Android assinada**.
-3. Informar a tag `v1.1.0`.
-4. Conferir a release e os assets `gemini-live-1.1.0.apk` e `update-manifest.json`.
+## Proteções já configuradas no GitHub
 
-O workflow verifica os secrets e falha fechado quando algum estiver ausente.
+- Reviewer obrigatório: `leon337`.
+- Self-review permitido para o responsável do ambiente.
+- Bypass de administradores desabilitado.
+- Deployment branch policy restrita a `main`.
 
-## 5. Migração inicial do telefone
+## Publicação de uma versão
 
-A instalação atual do MVP usa um certificado debug efêmero, diferente da chave persistente. O Android não permite atualização in-place entre esses certificados.
+Depois que os PRs do MVP e da Fase 01 forem revisados e integrados:
+
+1. Criar uma tag SemVer estável sobre um commit integrado à `main`, por exemplo `v1.1.0`.
+2. Executar Actions → **Publicar versão Android assinada**, selecionando a branch `main`.
+3. Informar a tag.
+4. Manter `publish=false` para gerar uma GitHub Release em draft.
+5. Revisar APK, manifesto e certificado.
+6. Publicar a Release somente após aprovação explícita no ambiente.
+
+O workflow valida branch, tag SemVer, versionCode, ancestralidade da tag em `main`, PKCS#12, assinatura, SHA-256 e manifesto. O catálogo do aplicativo ignora releases draft e prerelease; a versão só aparece no app depois da publicação.
+
+## Migração inicial do telefone
+
+A instalação atual do MVP usa um certificado debug efêmero. O certificado de release permanente será diferente; o Android não permite atualização in-place entre assinaturas distintas.
 
 A primeira migração exigirá:
-- salvar a chave API de forma segura para recadastro;
-- desinstalar a versão atual;
-- instalar o APK da release assinada;
-- cadastrar novamente a chave API e validar a conexão.
+- manter a API Key atual disponível para recadastro;
+- desinstalar o aplicativo atual;
+- instalar o APK de release assinado;
+- cadastrar novamente a API Key;
+- validar uma nova sessão Gemini Live.
 
-Essa operação apaga dados locais e Android Keystore. MESTRE solicitará um HUMAN_GATE específico a LEANDRO antes de executar qualquer migração. Configurar os secrets não autoriza a desinstalação.
+Essa operação apaga dados locais e Android Keystore. MESTRE não executará desinstalação, limpeza ou substituição no OPPO sem um HUMAN_GATE específico dirigido a LEANDRO. Configurar o ambiente e os secrets não autoriza a migração.

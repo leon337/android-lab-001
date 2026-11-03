@@ -10,13 +10,17 @@ Todas as alterações relevantes do Gemini Live Android serão registradas aqui.
 - Composição determinística da instrução de sistema a partir da personalidade, comportamento e instruções adicionais.
 - Tela para consultar releases, selecionar versões e preparar instalação.
 - Verificação de pacote, versionCode, certificado de assinatura e SHA-256 antes de abrir o instalador Android.
-- Workflow manual para compilar, assinar e publicar releases com manifesto de atualização.
+- Workflow manual para compilar e assinar releases com manifesto de atualização.
+- Catálogo aceita somente assets HTTPS do GitHub Releases com digest SHA-256 do manifesto.
+- Validação SemVer estrita, sem zeros à esquerda e com limites seguros de versionCode.
 
 ### Segurança
 - Atualizações exigem confirmação no instalador nativo do Android.
 - Downgrade é bloqueado nesta fase.
 - A chave API e os dados locais não são enviados ao catálogo de versões.
 - A release só pode atualizar uma instalação com o mesmo certificado de assinatura.
+- Publicação começa em modo draft e exige aprovação do GitHub Environment `android-release`.
+- O environment restringe deployments à `main`, exige reviewer LEANDRO e desabilita bypass administrativo.
 
 ## [1.0.0-mvp.1] — 2026-11-03
 

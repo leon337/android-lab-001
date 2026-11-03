@@ -4,45 +4,95 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag estável já enviada ao GitHub (ex.: v1.1.0)"
+        description: "Tag estável já integrada à main (ex.: v1.1.0)"
         required: true
         type: string
+      publish:
+        description: "Publicar imediatamente. Desmarcado cria uma release draft para revisão."
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
+concurrency:
+  group: android-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   release:
-    name: Compilar, assinar e publicar APK
+    name: Compilar, assinar e preparar release Android
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    environment:
+      name: android-release
     steps:
-      - name: Validar tag e segredos de assinatura
+      - name: Validar branch, tag e segredos de assinatura
         shell: bash
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          PUBLISH_RELEASE: ${{ inputs.publish }}
           ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
           ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
           ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Use uma tag estável no formato vMAJOR.MINOR.PATCH."
+
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::O workflow de release só pode ser executado a partir da main."
             exit 1
           fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)$ ]]; then
+            echo "::error::Use uma tag SemVer estável estrita no formato vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+
           for name in ANDROID_SIGNING_KEYSTORE_BASE64 ANDROID_SIGNING_STORE_PASSWORD ANDROID_SIGNING_KEY_ALIAS ANDROID_SIGNING_KEY_PASSWORD; do
             if [[ -z "${!name}" ]]; then
-              echo "::error::O segredo $name não está configurado no repositório."
+              echo "::error::O segredo $name não está configurado no ambiente android-release."
               exit 1
             fi
           done
+
+          VERSION_NAME="${RELEASE_TAG#v}"
+          python3 - "$VERSION_NAME" <<'PY'
+          import sys
+          parts = [int(part) for part in sys.argv[1].split(".")]
+          major, minor, patch = parts
+          if minor >= 100 or patch >= 100:
+              raise SystemExit("MINOR e PATCH precisam ser menores que 100 para versionCode monotônico.")
+          code = major * 10000 + minor * 100 + patch
+          if not 1 <= code <= 2147483647:
+              raise SystemExit("versionCode fora do intervalo permitido pelo Android.")
+          print(f"SemVer válido; versionCode={code}")
+          PY
 
       - name: Baixar código da tag
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.tag }}
           fetch-depth: 0
+
+      - name: Confirmar que a tag pertence à main
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          TAG_COMMIT="$(git rev-list -n 1 "$RELEASE_TAG")"
+          if [[ -z "$TAG_COMMIT" ]]; then
+            echo "::error::A tag informada não resolve para um commit."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "::error::A tag precisa apontar para um commit integrado à main."
+            exit 1
+          fi
+          echo "Tag $RELEASE_TAG validada em $TAG_COMMIT."
 
       - name: Instalar Java 17
         uses: actions/setup-java@v4
@@ -64,14 +114,19 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: Preparar assinatura temporária
+      - name: Preparar e validar assinatura temporária
         shell: bash
         env:
           ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
         run: |
           set -euo pipefail
-          echo "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gemini-live-release.p12"
-          chmod 600 "$RUNNER_TEMP/gemini-live-release.p12"
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/gemini-live-release.p12"
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          openssl pkcs12 -in "$KEYSTORE" -passin env:ANDROID_SIGNING_STORE_PASSWORD -noout
+          echo "PKCS#12 presente e senha validada."
 
       - name: Compilar APK de release assinado
         shell: bash
@@ -82,26 +137,29 @@ jobs:
           ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
         run: |
           set -euo pipefail
-          TAG="$RELEASE_TAG"
-          VERSION_NAME="${TAG#v}"
-          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
-          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
-          if (( VERSION_CODE < 1 || VERSION_CODE > 2100000000 )); then
-            echo "::error::Version code fora do intervalo Android."
-            exit 1
-          fi
+          VERSION_NAME="${RELEASE_TAG#v}"
+          VERSION_CODE="$(python3 - "$VERSION_NAME" <<'PY'
+          import sys
+          major, minor, patch = map(int, sys.argv[1].split("."))
+          print(major * 10000 + minor * 100 + patch)
+          PY
+          )"
+
           gradle --no-daemon :app:assembleRelease \
             -PappVersionName="$VERSION_NAME" \
             -PappVersionCode="$VERSION_CODE" \
             -PandroidSigningStoreFile="$RUNNER_TEMP/gemini-live-release.p12"
+
           APK_SOURCE="app/build/outputs/apk/release/app-release.apk"
           test -s "$APK_SOURCE"
           APK_NAME="gemini-live-$VERSION_NAME.apk"
           cp "$APK_SOURCE" "$APK_NAME"
+
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK_NAME"
           CERT_SHA256=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK_NAME" | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {gsub(/:/, "", $2); print toupper($2); exit}')
           APK_SHA256=$(sha256sum "$APK_NAME" | awk '{print $1}')
           test -n "$CERT_SHA256"
+
           export VERSION_NAME VERSION_CODE APK_NAME APK_SHA256 CERT_SHA256
           python3 - <<'PY'
           import json, os
@@ -119,25 +177,36 @@ jobs:
               json.dump(manifest, f, ensure_ascii=False, indent=2)
               f.write("\n")
           PY
+
           echo "VERSION_NAME=$VERSION_NAME" >> "$GITHUB_ENV"
           echo "APK_NAME=$APK_NAME" >> "$GITHUB_ENV"
 
-      - name: Publicar GitHub Release
+      - name: Criar release draft ou publicar após aprovação
         env:
           RELEASE_TAG: ${{ inputs.tag }}
+          PUBLISH_RELEASE: ${{ inputs.publish }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+        shell: bash
         run: |
           set -euo pipefail
-          TAG="$RELEASE_TAG"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::error::Já existe uma release para $TAG. Releases publicadas são imutáveis neste fluxo."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Já existe uma release para $RELEASE_TAG. Releases publicadas são imutáveis neste fluxo."
             exit 1
           fi
-          gh release create "$TAG" "$APK_NAME" update-manifest.json \
-            --verify-tag \
-            --title "Gemini Live $VERSION_NAME" \
-            --notes "Versão $VERSION_NAME do Gemini Live Android. APK assinado, com manifesto e SHA-256 para atualização segura pelo aplicativo."
+
+          if [[ "$PUBLISH_RELEASE" == "true" ]]; then
+            gh release create "$RELEASE_TAG" "$APK_NAME" update-manifest.json \
+              --verify-tag \
+              --title "Gemini Live $VERSION_NAME" \
+              --notes "Versão $VERSION_NAME do Gemini Live Android. APK assinado, com manifesto e SHA-256 para atualização segura pelo aplicativo."
+          else
+            gh release create "$RELEASE_TAG" "$APK_NAME" update-manifest.json \
+              --verify-tag \
+              --draft \
+              --title "Gemini Live $VERSION_NAME" \
+              --notes "RASCUNHO — revisar antes de publicar. Versão $VERSION_NAME do Gemini Live Android. APK assinado, com manifesto e SHA-256."
+          fi
 
       - name: Guardar evidências do release
         if: always()

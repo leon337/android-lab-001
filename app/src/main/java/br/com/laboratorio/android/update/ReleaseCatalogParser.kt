@@ -1,10 +1,14 @@
 package br.com.laboratorio.android.update
 
+import android.net.Uri
 import org.json.JSONArray
 import org.json.JSONObject
 
 object ReleaseCatalogParser {
     private const val MANIFEST_ASSET_NAME = "update-manifest.json"
+    private const val RELEASE_ASSET_PREFIX =
+        "/leon337/android-lab-001/releases/download/"
+    private val sha256Digest = Regex("(?i)^sha256:[0-9a-f]{64}$")
 
     fun parse(raw: String): List<AvailableRelease> {
         val releases = JSONArray(raw)
@@ -27,11 +31,17 @@ object ReleaseCatalogParser {
                     if (name.startsWith("gemini-live-") && name.endsWith(".apk")) apk = asset
                     if (name == MANIFEST_ASSET_NAME) manifest = asset
                 }
+
                 val apkAsset = apk ?: continue
                 val manifestAsset = manifest ?: continue
                 val apkUrl = apkAsset.optString("browser_download_url")
                 val manifestUrl = manifestAsset.optString("browser_download_url")
-                if (!apkUrl.startsWith("https://") || !manifestUrl.startsWith("https://")) continue
+                val manifestDigest = manifestAsset.optString("digest")
+                val apkSize = apkAsset.optLong("size", 0L)
+
+                if (!isTrustedReleaseAsset(apkUrl) || !isTrustedReleaseAsset(manifestUrl)) continue
+                if (!sha256Digest.matches(manifestDigest)) continue
+                if (apkSize <= 0L) continue
 
                 add(
                     AvailableRelease(
@@ -42,13 +52,19 @@ object ReleaseCatalogParser {
                         notes = release.optString("body"),
                         apkAssetName = apkAsset.optString("name"),
                         apkUrl = apkUrl,
-                        apkSize = apkAsset.optLong("size", 0L),
+                        apkSize = apkSize,
                         manifestUrl = manifestUrl,
-                        manifestDigest = manifestAsset.optString("digest")
-                            .takeUnless { it.isBlank() || it == "null" },
+                        manifestDigest = manifestDigest,
                     ),
                 )
             }
         }.sortedByDescending { it.versionCode }
+    }
+
+    private fun isTrustedReleaseAsset(url: String): Boolean {
+        val uri = Uri.parse(url)
+        return uri.scheme?.equals("https", ignoreCase = true) == true &&
+            uri.host?.equals("github.com", ignoreCase = true) == true &&
+            uri.encodedPath.orEmpty().startsWith(RELEASE_ASSET_PREFIX)
     }
 }

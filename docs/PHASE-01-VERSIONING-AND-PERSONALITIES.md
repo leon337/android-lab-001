@@ -6,8 +6,9 @@ Evoluir o MVP 1.0.0 sem misturar funcionalidades de fases futuras.
 ## Entregas
 - Gerenciador de versões baseado em GitHub Releases.
 - Catálogo e seleção de versões estáveis publicadas.
-- Download privado e verificação de SHA-256.
-- Verificação do packageName, versionName, versionCode e certificado.
+- Download privado e verificação de SHA-256 do manifesto e do APK.
+- Aceitação apenas de assets HTTPS do repositório GitHub esperado.
+- Verificação do packageName, versionName, versionCode, minSdk e certificado.
 - Instalação por FileProvider e instalador Android com confirmação humana.
 - Seis personalidades comportamentais.
 - Quatro controles independentes de comportamento.

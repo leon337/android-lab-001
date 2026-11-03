@@ -7,6 +7,7 @@ import android.os.Build
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
@@ -28,7 +29,7 @@ data class AvailableRelease(
     val apkUrl: String,
     val apkSize: Long,
     val manifestUrl: String,
-    val manifestDigest: String?,
+    val manifestDigest: String,
 )
 
 private data class ReleaseManifest(
@@ -117,7 +118,10 @@ class AppUpdateRepository(context: Context) {
             throw IOException("O APK excede o limite de tamanho permitido.")
         }
 
-        val updatesDirectory = File(appContext.filesDir, "updates").apply { mkdirs() }
+        val updatesDirectory = File(appContext.filesDir, "updates")
+        if (!updatesDirectory.isDirectory && !updatesDirectory.mkdirs()) {
+            throw IOException("Não foi possível preparar o armazenamento privado da atualização.")
+        }
         val destination = File(updatesDirectory, "${release.tagName}.apk".replace(Regex("[^A-Za-z0-9._-]"), "_"))
         val request = Request.Builder()
             .url(release.apkUrl)
@@ -179,15 +183,27 @@ class AppUpdateRepository(context: Context) {
             if (!response.isSuccessful) {
                 throw IOException("Não foi possível obter o manifesto da release (HTTP ${response.code}).")
             }
-            val bytes = response.body?.bytes() ?: throw IOException("Manifesto vazio.")
-            if (bytes.size > MAX_MANIFEST_BYTES) throw IOException("Manifesto excede o tamanho permitido.")
-            release.manifestDigest?.let { expected ->
-                val actual = MessageDigest.getInstance("SHA-256").digest(bytes).toHex()
-                if (!actual.equals(normalizeSha256(expected), ignoreCase = true)) {
-                    throw IOException("A integridade do manifesto não foi confirmada.")
+            val body = response.body ?: throw IOException("Manifesto vazio.")
+            val bytes = ByteArrayOutputStream()
+            body.byteStream().use { input ->
+                val buffer = ByteArray(4_096)
+                var total = 0
+                while (true) {
+                    val count = input.read(buffer)
+                    if (count < 0) break
+                    total += count
+                    if (total > MAX_MANIFEST_BYTES) {
+                        throw IOException("Manifesto excede o tamanho permitido.")
+                    }
+                    bytes.write(buffer, 0, count)
                 }
             }
-            val json = JSONObject(bytes.toString(Charsets.UTF_8))
+            val manifestBytes = bytes.toByteArray()
+            val actualDigest = MessageDigest.getInstance("SHA-256").digest(manifestBytes).toHex()
+            if (!actualDigest.equals(normalizeSha256(release.manifestDigest), ignoreCase = true)) {
+                throw IOException("A integridade do manifesto não foi confirmada.")
+            }
+            val json = JSONObject(manifestBytes.toString(Charsets.UTF_8))
             return ReleaseManifest(
                 schemaVersion = json.optInt("schemaVersion", 0),
                 packageName = json.optString("packageName"),

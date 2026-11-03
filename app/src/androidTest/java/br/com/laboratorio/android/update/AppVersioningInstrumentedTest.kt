@@ -17,8 +17,13 @@ class AppVersioningInstrumentedTest {
     fun tagsPrereleaseEValoresSemverForaDoContratoSaoRejeitados() {
         assertNull(AppVersioning.parseStableTag("v1.0.0-mvp.1"))
         assertNull(AppVersioning.parseStableTag("1.1.0"))
+        assertNull(AppVersioning.parseStableTag("v01.1.0"))
+        assertNull(AppVersioning.parseStableTag("v1.100.0"))
         assertNull(AppVersioning.versionCodeFor("1.100.0"))
         assertNull(AppVersioning.versionCodeFor("1.1"))
+        assertNull(AppVersioning.versionCodeFor("922337203685477.0.0"))
+        assertNull(AppVersioning.versionCodeFor("214748.36.48"))
+        assertEquals(Int.MAX_VALUE.toLong(), AppVersioning.versionCodeFor("214748.36.47"))
     }
 
     @Test
@@ -55,6 +60,39 @@ class AppVersioningInstrumentedTest {
                 "draft": false,
                 "prerelease": false,
                 "assets": []
+              },
+              {
+                "tag_name": "v1.3.0",
+                "draft": false,
+                "prerelease": false,
+                "assets": [
+                  {
+                    "name": "gemini-live-1.3.0.apk",
+                    "browser_download_url": "https://github.com/leon337/android-lab-001/releases/download/v1.3.0/gemini-live-1.3.0.apk",
+                    "size": 1024
+                  },
+                  {
+                    "name": "update-manifest.json",
+                    "browser_download_url": "https://github.com/leon337/android-lab-001/releases/download/v1.3.0/update-manifest.json"
+                  }
+                ]
+              },
+              {
+                "tag_name": "v1.4.0",
+                "draft": false,
+                "prerelease": false,
+                "assets": [
+                  {
+                    "name": "gemini-live-1.4.0.apk",
+                    "browser_download_url": "https://example.com/gemini-live-1.4.0.apk",
+                    "size": 1024
+                  },
+                  {
+                    "name": "update-manifest.json",
+                    "browser_download_url": "https://github.com/leon337/android-lab-001/releases/download/v1.4.0/update-manifest.json",
+                    "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                  }
+                ]
               }
             ]
         """.trimIndent()
