@@ -53,7 +53,20 @@ export function makeServer({ env = process.env, fetcher = fetch, clock = Date.no
         signal: AbortSignal.timeout(12000)
       });
       if (!upstream.ok) {
-        console.error('Gemini token service returned HTTP', upstream.status);
+        // Apenas código/descrição sanitizada do provedor, jamais cabeçalhos nem tokens.
+        let providerStatus = 'unknown';
+        let providerReason = 'none';
+        if (typeof upstream.text === 'function') {
+          try {
+            const error = JSON.parse(await upstream.text()).error || {};
+            providerStatus = String(error.status || 'unknown').slice(0, 40);
+            providerReason = String(error.message || 'none')
+              .replace(/AIza[\w-]+/g, '[REDACTED]')
+              .replace(/[A-Za-z0-9_-]{38,}/g, '[REDACTED]')
+              .slice(0, 180);
+          } catch { /* resposta não JSON; sem logging de payload bruto */ }
+        }
+        console.error('Gemini token rejected', upstream.status, providerStatus, providerReason);
         return reply(502, {error: 'Falha ao emitir token temporário', upstreamStatus: upstream.status});
       }
       const data = await upstream.json();
