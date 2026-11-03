@@ -20,6 +20,10 @@ PASS: Administrator bypass disabled.
 PASS: git diff --check.
 PASS: YAML parse for release workflow.
 PASS: Bash syntax for release workflow and emulator script.
+PASS: 13 backend unit tests with fake provider; no real Gemini call.
+NOT RUN LOCALLY: Android unit tests/lint because notebook has no Gradle installation or Gradle wrapper.
+WARNING: PRs have no associated checks; Android build/emulator workflows are workflow_dispatch only.
+WARNING: main branch has no branch protection or ruleset; release Environment remains separately protected.
 PASS: Build APK run 41730256790.
 PASS: Eight instrumented tests passed in run 41730261955.
 PASS: Emulator UI smoke run 41731678974.

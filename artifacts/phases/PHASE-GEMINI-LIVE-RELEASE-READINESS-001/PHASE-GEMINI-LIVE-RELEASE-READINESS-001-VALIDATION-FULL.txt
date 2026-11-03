@@ -69,6 +69,10 @@ CI
 - UI XML confirms API key field, Gemini 3.8 Live and Gemini 3.8 Live Extended Thinking.
 - Screenshot artifact: 1080x2400.
 - YAML parse, workflow bash syntax, emulator script bash syntax and git diff --check: PASS.
+- Backend node:test: 13/13 PASS using fake credentials and a simulated provider; no Gemini API call.
+- Local Android unit tests/lint: NOT RUN because the notebook has no Gradle installation and the repository has no gradlew wrapper.
+- PR #2 and PR #3 statusCheckRollup: empty. Android build/emulator workflows expose workflow_dispatch only; no automatic PR checks are configured.
+- main branch protection API: HTTP 404 (not protected); repository rulesets list is empty. The android-release Environment remains protected with LEANDRO as required reviewer and main as allowed branch.
 
 GITHUB ENVIRONMENT
 ------------------

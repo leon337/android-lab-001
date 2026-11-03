@@ -33,6 +33,10 @@
 - Captura `app-inicial.png`: 1080×2400.
 - XML de interface confirmou campo de API Key, modelo Gemini 3.8 Live e modelo Gemini 3.8 Live Extended Thinking.
 - `git diff --check`, YAML parse e `bash -n`: sucesso.
+- Backend experimental: 13/13 testes locais passaram com provedor simulado; sem chamadas Gemini reais.
+- O notebook não possui Gradle nem `gradlew`; testes unitários Android e lint locais não foram executados. O build e o smoke Android foram aprovados pelos workflows GitHub.
+- Os PRs não apresentam checks associados (`statusCheckRollup` vazio); os workflows Android atuais são somente `workflow_dispatch`.
+- A branch `main` não possui branch protection nem rulesets. O Environment `android-release` continua protegido separadamente.
 - Commits de documentação MCF após o código testado: `8e5967b`, `dade6ed` e `7d04cd3`; não alteram o código validado.
 
 ## Não concluído

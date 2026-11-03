@@ -33,7 +33,14 @@
    - Commit final de mission trace: `7d04cd3`.
    - Manifestos SHA-256 dos artefatos foram verificados.
 
-7. **MESTRE — tentou preparar assinatura**
+7. **MESTRE — validou lacunas de governança e qualidade**
+   - Backend experimental: 13/13 testes locais passaram com provedor simulado.
+   - Notebook sem Gradle e repositório sem wrapper; testes Android locais/lint não foram executados, permanecendo como evidência os workflows GitHub aprovados.
+   - PRs sem checks associados porque os workflows Android são manuais (`workflow_dispatch`).
+   - Branch `main` sem proteção e sem rulesets; Environment `android-release` permanece protegido.
+   - Gate G-04 registrado para decisão humana antes de qualquer integração.
+
+8. **MESTRE — tentou preparar assinatura**
    - Geração local e upload dos secrets não foram concluídos pela sessão automatizada.
    - Nenhum keystore, senha ou secret foi criado ou exposto.
    - Procedimento manual documentado em `docs/RELEASE-SIGNING-SETUP.md`.

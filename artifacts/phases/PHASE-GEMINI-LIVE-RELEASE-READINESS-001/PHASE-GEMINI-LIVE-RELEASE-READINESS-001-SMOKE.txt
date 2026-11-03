@@ -17,4 +17,7 @@ PASS: Eight instrumented tests in 41730261955.
 PASS: Final emulator workflow 41731678974.
 PASS: UI smoke found API key field and both Gemini 3.8 Live models.
 PASS: Screenshot and XML evidence published as workflow artifact.
+PASS: 13 backend tests with fake provider.
+WARNING: Android workflows are manual-only; no automatic PR checks.
+WARNING: main is not branch-protected; release Environment has its own reviewer gate.
 BLOCKED: keystore and environment secrets remain unconfigured.

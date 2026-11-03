@@ -66,4 +66,7 @@ open_gates:
   - id: G-03
     owner: LEANDRO
     description: "Authorize one-time phone migration only after signed v1.1.0 is verified."
+  - id: G-04
+    owner: LEANDRO
+    description: "Decide whether to add main branch protection and automatic pull_request CI; main is currently unprotected and Android workflows are manual-only."
 next_action: "Finish local signing procedure, complete human PR review, then prepare draft v1.1.0 release."
