@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +66,8 @@ class LiveAudioClient(context: Context) {
     private var recorder: AudioRecord? = null
     private var playback: AudioTrack? = null
     private var captureJob: Job? = null
+    private var setupTimeoutJob: Job? = null
+    private var preserveTerminalStatus = false
     private val recording = AtomicBoolean(false)
     private val incomingAudio = Channel<ByteArray>(24)
 
@@ -84,6 +87,8 @@ class LiveAudioClient(context: Context) {
 
     suspend fun connect(brokerUrl: String, pairingCode: String) {
         if (_state.value.starting || _state.value.connected) return
+        preserveTerminalStatus = false
+        setupTimeoutJob?.cancel()
         val base = brokerUrl.trimEnd('/')
         if (!base.startsWith("https://")) {
             _state.value = _state.value.copy(
@@ -181,6 +186,19 @@ class LiveAudioClient(context: Context) {
                 .build()
             socket = http.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: Response) {
+                    setupTimeoutJob?.cancel()
+                    setupTimeoutJob = io.launch {
+                        delay(20_000)
+                        if (_state.value.starting && !_state.value.connected) {
+                            preserveTerminalStatus = true
+                            _state.value = _state.value.copy(
+                                status = "Tempo esgotado aguardando confirmação do Gemini. A sessão não foi inicializada.",
+                                connected = false,
+                                starting = false
+                            )
+                            webSocket.close(1000, "Timeout aguardando setupComplete")
+                        }
+                    }
                     val setup = JSONObject().put(
                         "setup",
                         JSONObject()
@@ -219,21 +237,28 @@ class LiveAudioClient(context: Context) {
                 }
 
                 override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                    setupTimeoutJob?.cancel()
                     haltAudio()
-                    _state.value = _state.value.copy(
-                        status = "Falha na sessão: ${t.message?.take(90) ?: "erro de conexão"}",
-                        connected = false,
-                        starting = false
-                    )
+                    if (!preserveTerminalStatus) {
+                        val httpStatus = response?.code?.let { " HTTP $it" }.orEmpty()
+                        _state.value = _state.value.copy(
+                            status = "Falha na sessão$httpStatus: ${t.message?.take(90) ?: "erro de conexão"}",
+                            connected = false,
+                            starting = false
+                        )
+                    }
                 }
 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                    setupTimeoutJob?.cancel()
                     haltAudio()
-                    _state.value = _state.value.copy(
-                        status = "Sessão encerrada",
-                        connected = false,
-                        starting = false
-                    )
+                    if (!preserveTerminalStatus) {
+                        _state.value = _state.value.copy(
+                            status = "Sessão encerrada ($code)",
+                            connected = false,
+                            starting = false
+                        )
+                    }
                 }
             })
         } catch (error: BrokerHttpException) {
@@ -295,7 +320,29 @@ class LiveAudioClient(context: Context) {
 
     private fun processMessage(text: String) {
         val packet = JSONObject(text)
+        val apiError = packet.optJSONObject("error")
+            ?: packet.optJSONObject("serverContent")?.optJSONObject("error")
+        if (apiError != null) {
+            setupTimeoutJob?.cancel()
+            preserveTerminalStatus = true
+            val code = apiError.optInt("code", 0)
+            val status = apiError.optString("status", "ERRO")
+            val message = apiError.optString("message", "O Google recusou a configuração da sessão.")
+                .replace(Regex("AIza[\\w-]+"), "[segredo oculto]")
+                .replace(Regex("(?i)bearer\\s+\\S+"), "Bearer [credencial oculta]")
+                .take(180)
+            _state.value = _state.value.copy(
+                status = "Gemini recusou a sessão ($code $status): $message",
+                connected = false,
+                starting = false,
+                reasoning = false
+            )
+            socket?.close(1008, "Gemini recusou a configuração")
+            return
+        }
         if (packet.has("setupComplete")) {
+            setupTimeoutJob?.cancel()
+            preserveTerminalStatus = false
             _state.value = _state.value.copy(
                 status = "Conectado — pode falar",
                 connected = true,
@@ -429,6 +476,8 @@ class LiveAudioClient(context: Context) {
 
     fun disconnect() {
         val requiresPairing = _state.value.requiresPairing
+        setupTimeoutJob?.cancel()
+        preserveTerminalStatus = false
         recording.set(false)
         socket?.close(1000, "Usuário encerrou a sessão")
         socket = null
