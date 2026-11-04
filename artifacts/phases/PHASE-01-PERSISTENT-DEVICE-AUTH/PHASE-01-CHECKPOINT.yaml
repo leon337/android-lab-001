@@ -1,0 +1,116 @@
+mission_id: MCF-20261103-ANDROID-GEMINI-DEVICE-AUTH
+parent_mission_id: null
+phase_id: PHASE-01-PERSISTENT-DEVICE-AUTH
+phase_status: EM_REVISAO
+risk_class: B
+authority:
+  human: LEANDRO
+  orchestrator: MESTRE
+  delegated_gate_agent: LÉO
+  independent_auditor: Emily
+  local_agent_runtime: unavailable
+repository:
+  name: leon337/android-lab-001
+  base_branch: main
+  base_commit: d891e601d1792adf62c43e5bcbdba8185aab98d4
+  branch: feat/gemini-live-secure
+  head_commit: fdd8b8ccae1abd3cdfa7ced0446d6d5248e01c57
+  pull_request: 2
+  pull_request_state: open_draft
+mcf:
+  repository: leon337/multiagent-collaboration-framework
+  main_commit: 0c821d4b47e31a460853f9e7a7b429b17142b1e1
+  operating_instructions: 1.2.0_ACTIVE
+  decisions: [MCF-DEC-051, MCF-DEC-052, MCF-DEC-053, MCF-DEC-065, MCF-DEC-066]
+  local_agent_runtime: unavailable_fail_closed
+evidence:
+  backend_tests:
+    run_id: 41698184335
+    result: success
+    tests: 13
+    head: fdd8b8ccae1abd3cdfa7ced0446d6d5248e01c57
+  apk_build:
+    run_id: 41698189589
+    result: success
+    artifact: android-lab-001-apk
+    sha256: 49022acddbe9da829ae27896b1c5546b521da9eea0607f530d8099b5aed0c39b
+    head: fdd8b8ccae1abd3cdfa7ced0446d6d5248e01c57
+  emulator:
+    run_id: 41698195157
+    result: success
+    tests: 5
+    failures: 0
+    errors: 0
+    skipped: 0
+    android_api: 35
+    android_version: 15
+    head: fdd8b8ccae1abd3cdfa7ced0446d6d5248e01c57
+  mbc:
+    version: 0.5.0
+    bridge: ready
+    extension: connected
+    github_pr_visual_check: confirmed
+    screenshot_reference: android-lab-pr2-fdd8b8c.png
+  google_live:
+    model: gemini-3.8-live-extended-thinking
+    thinking_level: LOW
+    websocket_api_version: v1alpha
+    real_session_test: pending
+completed_acceptance_criteria:
+  - backend_auth_enrollment_and_refresh_automated_tests
+  - android_keystore_aes_gcm_persistence_test
+  - apk_build
+  - emulator_instrumented_tests
+  - emulator_ui_smoke
+  - websocket_endpoint_version_corrected_per_official_sdk
+remaining_gaps:
+  - independent_security_review_by_Ricardo_and_Julia
+  - independent_MCF_audit_by_Emily
+  - MCF_gate_by_Leo
+  - real_Gemini_Live_WebSocket_session
+  - Render_deploy_of_new_auth_routes
+  - phone_install_and_manual_voice_test
+  - confirm_high_entropy_of_existing_pairing_secret_without_exposing_value
+  - consider_durable_rate_limit_for_enrollment
+  - update_public_PR_description_after_internal_gate
+artifacts:
+  - PHASE-01-PLAN.md
+  - PHASE-01-REPORT.md
+  - PHASE-01-VALIDATION.txt
+  - PHASE-01-VALIDATION-FULL.txt
+  - PHASE-01-SMOKE.txt
+  - PHASE-01-CHECKPOINT.yaml
+  - PHASE-01-DECISIONS.md
+  - PHASE-01-ARTIFACT-MANIFEST.sha256
+  - SECURITY-REVIEW.md
+  - PHASE-01-MISSION-TRACE.md
+decisions:
+  - D1_stateless_HMAC_device_credential
+  - D2_Android_Keystore_AES_GCM
+  - D3_no_new_environment_secrets
+  - D4_temporary_legacy_compatibility
+  - D5_no_individual_persistent_revocation
+  - D6_no_deploy_or_merge_in_this_phase
+  - D8_v1alpha_websocket_for_ephemeral_token
+  - D9_no_real_session_or_deploy_without_gate
+  - D10_independent_review_pending
+open_findings:
+  - SEC-01_bearer_device_credential
+  - SEC-02_no_individual_revocation
+  - SEC-03_in_memory_rate_limit
+  - SEC-04_enrollment_without_ip_rate_limit
+  - SEC-05_pairing_secret_entropy_unverified
+  - SEC-08_real_live_session_not_tested
+  - MCF_runtime_unavailable
+  - PR_description_stale
+next_phase: PHASE-02-RENDER-DEPLOY-AND-REAL-LIVE-E2E
+next_action: complete_independent_MCF_review_then_prepare_HUMAN_GATE_for_Render_deploy
+recipient: LÉO (when MCF local-agent-runtime is available)
+scope_limits:
+  render_deploy: not_performed
+  render_environment_changes: none
+  new_services_or_database: none
+  billing_changes: none
+  merge_main: not_performed
+  release: not_performed
+  phone_install_of_new_apk: pending_deploy_gate

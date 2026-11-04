@@ -1,0 +1,94 @@
+VALIDAÇÃO COMPLETA E RASTREABILIDADE — PHASE-01
+
+REPOSITÓRIO E VERSÕES
+- Android: leon337/android-lab-001
+- Branch: feat/gemini-live-secure
+- Base: d891e601d1792adf62c43e5bcbdba8185aab98d4
+- Head: fdd8b8ccae1abd3cdfa7ced0446d6d5248e01c57
+- PR #2: https://github.com/leon337/android-lab-001/pull/2
+- Estado PR: OPEN / DRAFT / sem reviewDecision
+- MCF main: 0c821d4b47e31a460853f9e7a7b429b17142b1e1
+- MCF Operating Instructions: 1.2.0 ACTIVE
+- MCF DEC-051 blob: af1566ee286adfe5542d2928baefc40e96eb1095
+- MCF DEC-052 blob: 07427861f38ce86dd8c4cae7c31619447d17f530
+- MCF DEC-053 blob: 2eb53c8391dd8e85ceb61c54423d4c7ecca56710
+- MCF skills registry blob: 02231ca7ab782edc5cebe9229c97a783035dc20f
+- MCF agent matrix blob: f436a058f03a0e5c588b8f23d4ec0543cc0cee4e
+- Classe de risco: B.
+
+BACKEND
+GitHub Actions run 41698184335 — Testar broker Gemini (sem segredo).
+Resultado: success.
+O conjunto de 13 testes cobre health, enrollment com/sem código, UUID v4, emissão de credencial, renovação, adulteração de assinatura, expiração, emissão de token efêmero, rejeição de credencial inválida, compatibilidade legada, rate limit por dispositivo e tratamento de erro upstream.
+Os testes usam segredo e provedor fictícios; não consomem quota Gemini.
+
+BUILD
+GitHub Actions run 41698189589 — Build APK de teste.
+Resultado: success.
+Artefato: android-lab-001-apk / app-debug.apk.
+Tamanho: 11.733.317 bytes.
+SHA-256: 49022acddbe9da829ae27896b1c5546b521da9eea0607f530d8099b5aed0c39b.
+Varredura de strings em classes.dex não encontrou padrões de chave Google, LAB_PAIRING_CODE ou GEMINI_API_KEY. A verificação é simples e não constitui auditoria binária completa.
+
+TESTES INSTRUMENTADOS
+GitHub Actions run 41698195157 — Teste Android em emulador.
+Resultado do workflow: success.
+XML: TEST-emulator-5554 - 15-_app-.xml.
+Atributos: tests=5, failures=0, errors=0, skipped=0.
+Duração agregada XML: 22,1 s.
+Ambiente: Android API 35, Android 15, emulator-5554 (sdk_gphone64_x86_64).
+
+Casos:
+- AssistenteInstrumentadoTest.descartarResumoVoltaAoEstadoSemSugestao — PASS.
+- AssistenteInstrumentadoTest.painelLivePresenteMasConexaoBloqueadaSemPareamento — PASS.
+- AssistenteInstrumentadoTest.criarResumoMockEAprovar — PASS.
+- ContadorInstrumentadoTest.contadorMostraEstadoInicialEIncrementaAposClique — PASS.
+- DeviceCredentialStoreInstrumentedTest.credencialFicaCifradaEPermaneceDisponivelNaProximaInstancia — PASS.
+
+SMOKE E LOGS
+- BUILD SUCCESSFUL em compilação do app e pacote de testes.
+- O primeiro start registrou erro transitório de conexão ao ADB na porta 5037; a execução prosseguiu e os testes passaram.
+- O launcher exibiu diálogo de não resposta; o script selecionou Wait e continuou.
+- Logs registraram PASS para campo de anotação, sugestão determinística do Mock e aprovação HITL.
+- Na parada do emulador apareceu mensagem "stop: Not implemented", não fatal; o workflow terminou success.
+- A captura diagnostico-launcher-anr.png tem o mesmo SHA-256 da captura app-inicial.png; portanto, a evidência mais forte do diálogo é o log textual, não uma imagem distinta.
+
+CAPTURAS DO EMULADOR
+- app-inicial.png: cc2d0f34547d1a26e641c4a50beeed00f998042733c16f834660d875911fe8a2
+- diagnostico-launcher-anr.png: cc2d0f34547d1a26e641c4a50beeed00f998042733c16f834660d875911fe8a2
+- resumo-aprovado.png: e7d9a6776d6a284739a26c3557912b589ce4c585f23177c48a6f4461e4191e93
+- resumo-sugerido.png: 218b81e18d44d9575b449be420b66bffc49fd8cf324517501dc01b7c5f6ab428
+
+PROTOCOLO GOOGLE
+Fontes oficiais consultadas:
+- https://ai.google.dev/gemini-api/docs/live-api/ephemeral-tokens
+- https://ai.google.dev/gemini-api/docs/live-api/thinking
+- https://github.com/googleapis/python-genai/blob/main/google/genai/live.py
+- https://github.com/googleapis/js-genai/blob/main/src/live.ts
+
+O SDK oficial detecta tokens auth_tokens/..., escolhe BidiGenerateContentConstrained, usa Authorization: Token e alerta que o suporte a token efêmero na conexão está em v1alpha. A criação REST do token permanece em v1beta/auth_tokens. O commit fdd8b8c corrigiu a versão do WebSocket.
+O modelo gemini-3.8-live-extended-thinking e thinkingLevel LOW aparecem na documentação oficial. Não houve sessão real após essa correção.
+
+MBC
+- Mestre Browser Control 0.5.0.
+- Mission MBC_AUTONOMOUS_GLOBAL; level autonomo; state active.
+- Bridge ready; extensão connected; last_error null.
+- Nova aba aberta para https://github.com/leon337/android-lab-001/pull/2.
+- Navegação confirmada por browser_navigate e snapshot semântico.
+- Screenshot viewport solicitado: android-lab-pr2-fdd8b8c.png (referência relativa do MBC; não foi localizada no diretório do repositório e não é incluída no manifesto).
+- Nenhuma escrita no GitHub foi realizada pela GUI.
+
+MCF E LIMITAÇÃO DO RUNTIME
+A matriz e o registro de skills foram consultados. Para mudança em IA, a sequência recomendada é Mestre → Miriam → Tiago → Rafael → Ricardo → Júlia → Beatriz → Augusto → Emily → Léo → Gabriel, com Carmem/PRF e Renato/testes conforme as skills.
+O comando local-agent-runtime não existe no notebook e não consta entre as ferramentas disponíveis. A skill MCF-EXECUTE-LOCAL-TEAM determina fallback fail-closed. Nenhuma atuação independente foi simulada. MESTRE executou as operações técnicas diretamente; a ESEV com agentes independentes, auditoria de Emily e gate de Léo permanecem incompletos.
+
+RENDER E DISPOSITIVO
+- Nenhum deploy do branch foi executado.
+- Nenhuma variável do Render foi lida ou alterada nesta fase.
+- As rotas novas /auth/enroll e /auth/refresh não foram implantadas.
+- O novo APK não foi instalado no telefone físico.
+- O backend antigo pode responder health/token, mas isso não comprova as novas rotas nem o novo WebSocket.
+- Nenhuma chave, código ou token foi incluído neste relatório.
+
+ESTADO FINAL
+Build, backend CI, testes instrumentados e smoke automatizado estão aprovados no commit fdd8b8c. Integração Gemini Live ponta a ponta permanece não validada. PR #2 permanece draft. A fase está EM_REVISAO, não ENTREGUE, até auditoria independente, gate de Léo e posterior HUMAN_GATE para deploy.
