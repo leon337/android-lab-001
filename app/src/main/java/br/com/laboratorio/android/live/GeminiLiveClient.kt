@@ -340,6 +340,10 @@ class GeminiLiveClient(
         }
 
 
+        if (packet.has("goAway")) {
+            listener.onNotice("O Google vai encerrar esta sessão em breve. Reinicie a conversa se necessário.")
+        }
+
         if (content == null) return
 
         if (content.optBoolean("interrupted", false)) {
@@ -370,9 +374,7 @@ class GeminiLiveClient(
             listener.onTurnComplete()
         }
 
-        if (packet.has("goAway")) {
-            listener.onNotice("O Google vai encerrar esta sessão em breve. Reinicie a conversa se necessário.")
-        }
+
     }
 
     @SuppressLint("MissingPermission")
