@@ -4,13 +4,11 @@
 
 **Estado: preparação parcial.**
 
-- GitHub Environment `android-release`: criado.
-- Reviewer obrigatório: LEANDRO (`leon337`).
-- Branch policy: somente `main`.
-- Bypass de administradores: desabilitado.
+- GitHub Environment `android-signing`: criado, sem reviewer e com deployment branch policy restrita a `main`.
+- GitHub Environment `android-release`: criado com reviewer obrigatório LEANDRO (`leon337`), branch policy somente `main` e bypass administrativo desabilitado.
 - Keystore PKCS#12: ainda não gerado.
-- Secrets do ambiente: ainda não cadastrados.
-- O procedimento local de geração e cadastro ainda precisa ser concluído manualmente; nenhum keystore ou secret foi criado.
+- Secrets em `android-signing`: ainda não cadastrados.
+- Nenhum secret foi lido, criado ou alterado nesta etapa.
 
 ## Objetivo
 
@@ -84,7 +82,7 @@ A pasta `~/Backups` está no mesmo disco físico do notebook. Faça também uma 
 
 No repositório `leon337/android-lab-001`:
 
-Settings → Environments → `android-release` → Environment secrets.
+Settings → Environments → `android-signing` → Environment secrets.
 
 Cadastrar exatamente:
 
@@ -97,14 +95,12 @@ Cadastrar exatamente:
 
 Para obter o Base64 no notebook, use `base64 -w0 "$HOME/.local/share/gemini-live-signing/gemini-live-release.p12"` e cole diretamente no secret correspondente. Não armazene o texto Base64 em arquivos do projeto.
 
-Não use repository secrets: o workflow consome os secrets do ambiente protegido `android-release`.
+Não use repository secrets: o job de compilação consome os secrets do ambiente `android-signing`. O ambiente `android-release` não armazena chave privada nem senhas; ele é exclusivamente o gate de publicação.
 
 ## Proteções já configuradas no GitHub
 
-- Reviewer obrigatório: `leon337`.
-- Self-review permitido para o responsável do ambiente.
-- Bypass de administradores desabilitado.
-- Deployment branch policy restrita a `main`.
+- `android-signing`: sem reviewer; deployment branch policy restrita a `main`.
+- `android-release`: reviewer obrigatório `leon337` (LEANDRO), self-review permitido, bypass de administradores desabilitado e deployment branch policy restrita a `main`.
 
 ## Publicação de uma versão
 
@@ -112,12 +108,12 @@ Depois que os PRs do MVP e da Fase 01 forem revisados e integrados:
 
 1. Criar uma tag SemVer estável sobre um commit integrado à `main`, por exemplo `v1.1.0`.
 2. Executar Actions → **Publicar versão Android assinada**, selecionando a branch `main`.
-3. Informar a tag.
-4. Manter `publish=false` para gerar uma GitHub Release em draft.
-5. Revisar APK, manifesto e certificado.
-6. Publicar a Release somente após aprovação explícita no ambiente.
+3. Informar a tag e manter `publish=false` para preparar uma release draft, ou marcar `publish=true` se a intenção já for publicar após aprovação.
+4. O job `build-release` usa `android-signing`, compila e assina o APK e disponibiliza o artifact com APK, manifesto e `release-evidence.txt`.
+5. Inspecionar o artifact diretamente na execução do workflow antes de aprovar o próximo job.
+6. O job `publish-release` aguarda aprovação explícita no ambiente `android-release`; após aprovação, cria a draft ou publica a release conforme a opção selecionada.
 
-O workflow valida branch, tag SemVer, versionCode, ancestralidade da tag em `main`, PKCS#12, assinatura, SHA-256 e manifesto. O catálogo do aplicativo ignora releases draft e prerelease; a versão só aparece no app depois da publicação.
+O gate de publicação ocorre **depois** da compilação e da disponibilização do artifact, não antes. O workflow valida branch, tag SemVer, versionCode, ancestralidade da tag em `main`, PKCS#12, assinatura, SHA-256, packageName, minSdk e manifesto. O catálogo do aplicativo ignora releases draft e prerelease; a versão só aparece no app depois da publicação.
 
 ## Migração inicial do telefone
 

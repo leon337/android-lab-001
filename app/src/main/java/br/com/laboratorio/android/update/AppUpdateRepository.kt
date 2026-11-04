@@ -11,6 +11,9 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.util.concurrent.TimeUnit
 
 data class InstalledAppVersion(
@@ -43,14 +46,17 @@ private data class ReleaseManifest(
     val signingCertificateSha256: String,
 )
 
-class AppUpdateRepository(context: Context) {
-    private val appContext = context.applicationContext
-    private val packageManager = appContext.packageManager
-    private val client = OkHttpClient.Builder()
+class AppUpdateRepository(
+    context: Context,
+    private val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(90, TimeUnit.SECONDS)
         .callTimeout(2, TimeUnit.MINUTES)
-        .build()
+        .build(),
+    private val installedVersionProvider: (() -> InstalledAppVersion)? = null,
+) {
+    private val appContext = context.applicationContext
+    private val packageManager = appContext.packageManager
 
     fun installedVersion(): InstalledAppVersion {
         val info = packageManager.getPackageInfo(
@@ -84,7 +90,7 @@ class AppUpdateRepository(context: Context) {
         release: AvailableRelease,
         onProgress: (Int) -> Unit,
     ): File {
-        val installed = installedVersion()
+        val installed = installedVersionProvider?.invoke() ?: installedVersion()
         if (release.versionCode <= installed.versionCode) {
             throw IOException("Esta versão não é mais recente que a versão instalada. Downgrade não está habilitado.")
         }
@@ -114,15 +120,19 @@ class AppUpdateRepository(context: Context) {
             )
         }
 
-        if (release.apkSize > MAX_APK_BYTES) {
-            throw IOException("O APK excede o limite de tamanho permitido.")
+        if (release.apkSize <= 0L || release.apkSize > MAX_APK_BYTES) {
+            throw IOException("O tamanho declarado do APK é inválido ou excede o limite permitido.")
         }
 
         val updatesDirectory = File(appContext.filesDir, "updates")
         if (!updatesDirectory.isDirectory && !updatesDirectory.mkdirs()) {
             throw IOException("Não foi possível preparar o armazenamento privado da atualização.")
         }
-        val destination = File(updatesDirectory, "${release.tagName}.apk".replace(Regex("[^A-Za-z0-9._-]"), "_"))
+        val destination = File(
+            updatesDirectory,
+            "${release.tagName}.apk".replace(Regex("[^A-Za-z0-9._-]"), "_"),
+        )
+        val partial = File.createTempFile("gemini-live-update-", ".apk.part", updatesDirectory)
         val request = Request.Builder()
             .url(release.apkUrl)
             .header("User-Agent", "GeminiLiveAndroid")
@@ -134,37 +144,57 @@ class AppUpdateRepository(context: Context) {
                     throw IOException("Falha ao baixar o APK (HTTP ${response.code}).")
                 }
                 val body = response.body ?: throw IOException("O GitHub retornou um APK vazio.")
-                val totalBytes = body.contentLength().takeIf { it > 0L } ?: release.apkSize
+                val declaredLength = body.contentLength()
+                if (declaredLength > MAX_APK_BYTES) {
+                    throw IOException("O APK excede o limite de tamanho permitido.")
+                }
+                if (declaredLength > 0L && declaredLength != release.apkSize) {
+                    throw IOException("O tamanho recebido não corresponde ao asset da release.")
+                }
+                val totalBytes = declaredLength.takeIf { it > 0L } ?: release.apkSize
                 val digest = MessageDigest.getInstance("SHA-256")
                 var copied = 0L
                 body.byteStream().use { input ->
-                    destination.outputStream().buffered().use { output ->
+                    partial.outputStream().buffered().use { output ->
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         while (true) {
                             val count = input.read(buffer)
                             if (count < 0) break
                             copied += count
-                            if (copied > MAX_APK_BYTES) throw IOException("Download excedeu o limite permitido.")
+                            if (copied > MAX_APK_BYTES) {
+                                throw IOException("Download excedeu o limite permitido.")
+                            }
                             digest.update(buffer, 0, count)
                             output.write(buffer, 0, count)
-                            if (totalBytes > 0L) onProgress(((copied * 100) / totalBytes).toInt().coerceIn(0, 99))
+                            if (totalBytes > 0L) {
+                                onProgress(((copied * 100) / totalBytes).toInt().coerceIn(0, 99))
+                            }
                         }
                     }
+                }
+                if (copied != release.apkSize || (declaredLength > 0L && copied != declaredLength)) {
+                    throw IOException("O download foi interrompido ou possui tamanho inconsistente.")
                 }
                 val actualDigest = digest.digest().toHex()
                 if (!actualDigest.equals(normalizeSha256(manifest.apkSha256), ignoreCase = true)) {
                     throw IOException("O SHA-256 do APK não confere. O arquivo foi descartado.")
                 }
             }
-        } catch (error: Exception) {
-            destination.delete()
-            throw error
-        }
 
-        try {
-            verifyDownloadedPackage(destination, manifest, expectedSigner)
+            // Valida o pacote ainda no arquivo temporário; só promove o APK após todos os checks.
+            verifyDownloadedPackage(partial, manifest, expectedSigner)
+            try {
+                Files.move(
+                    partial.toPath(),
+                    destination.toPath(),
+                    StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING,
+                )
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(partial.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
         } catch (error: Exception) {
-            destination.delete()
+            partial.delete()
             throw error
         }
 
@@ -229,6 +259,14 @@ class AppUpdateRepository(context: Context) {
         }
         if (info.versionName != manifest.versionName || versionCode(info) != manifest.versionCode) {
             throw IOException("A versão interna do APK não corresponde ao manifesto.")
+        }
+        val archiveMinSdk = info.applicationInfo?.minSdkVersion
+            ?: throw IOException("Não foi possível identificar o minSdk interno do APK.")
+        if (archiveMinSdk != manifest.minSdk) {
+            throw IOException("O minSdk interno do APK não corresponde ao manifesto.")
+        }
+        if (archiveMinSdk < 26 || archiveMinSdk > Build.VERSION.SDK_INT) {
+            throw IOException("O minSdk interno do APK não é compatível com este dispositivo.")
         }
         val archiveSigner = signingCertificateSha256(info)
         if (archiveSigner != expectedSigner) {

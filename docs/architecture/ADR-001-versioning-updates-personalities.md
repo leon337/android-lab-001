@@ -56,13 +56,13 @@ O SHA-256 detecta corrupção. A assinatura Android é a fronteira de autenticid
 
 ### 5. Identidade de assinatura
 
-O pipeline de release exige um keystore PKCS#12 persistente e os seguintes GitHub Environment secrets no ambiente protegido `android-release`:
+O pipeline de release exige um keystore PKCS#12 persistente e os seguintes GitHub Environment secrets no ambiente `android-signing`, restrito à branch `main`:
 - `ANDROID_SIGNING_KEYSTORE_BASE64`
 - `ANDROID_SIGNING_STORE_PASSWORD`
 - `ANDROID_SIGNING_KEY_ALIAS`
 - `ANDROID_SIGNING_KEY_PASSWORD`
 
-O keystore não pode ser versionado no Git. O ambiente `android-release` exige aprovação de LEANDRO, restringe deployments à `main` e desabilita bypass administrativo. O workflow só executa em `main`, exige tag ancestral da branch e cria release draft por padrão. O keystore e os secrets ainda estão pendentes de configuração.
+O keystore não pode ser versionado no Git. O ambiente `android-release` é separado e exige aprovação de LEANDRO, restringe deployments à `main` e desabilita bypass administrativo. O workflow compila e assina o APK em `android-signing`, disponibiliza o artifact para inspeção e somente depois aguarda aprovação em `android-release` para criar uma draft ou publicar a release. O keystore e os secrets ainda estão pendentes de configuração.
 
 **Migração inicial pendente:** o APK do MVP foi assinado por uma chave debug efêmera do runner GitHub Actions. O novo pipeline usa um certificado persistente. O Android não permite atualização in-place entre certificados diferentes. A primeira instalação do APK com assinatura persistente exigirá uma migração única, com desinstalação e perda dos dados locais/Android Keystore. O usuário deverá cadastrar novamente a chave API. Nenhuma desinstalação será executada sem autorização específica.
 

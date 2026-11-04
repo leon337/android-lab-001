@@ -65,15 +65,20 @@ O aplicativo não contém uma chave API fixa, não exige servidor próprio para 
 
 ### Publicar uma release
 
-O workflow manual **Publicar versão Android assinada** só executa a partir de `main`, aceita tags SemVer estáveis integradas à branch principal e valida o versionCode. O job usa o GitHub Environment protegido `android-release`, com aprovação obrigatória de LEANDRO, branch policy restrita à `main` e bypass administrativo desabilitado.
+O workflow manual **Publicar versão Android assinada** só executa a partir de `main`, aceita tags SemVer estáveis integradas à branch principal e valida o versionCode. O pipeline usa dois GitHub Environments separados:
 
-O workflow usa estes Environment secrets:
+- `android-signing`: secrets de assinatura, sem aprovação manual e com deployment branch policy restrita a `main`.
+- `android-release`: gate de publicação, com aprovação obrigatória de LEANDRO, branch policy restrita a `main` e bypass administrativo desabilitado.
+
+O primeiro job compila e assina o APK usando os secrets de `android-signing`, depois publica APK, manifesto e evidências como artifact do workflow. Somente depois disso o job de publicação aguarda aprovação em `android-release`; LEANDRO pode inspecionar o artifact antes de aprovar.
+
+Os Environment secrets ficam exclusivamente em `android-signing`:
 - `ANDROID_SIGNING_KEYSTORE_BASE64`
 - `ANDROID_SIGNING_STORE_PASSWORD`
 - `ANDROID_SIGNING_KEY_ALIAS`
 - `ANDROID_SIGNING_KEY_PASSWORD`
 
-O padrão é `publish=false`, que cria uma release draft para revisão. A publicação imediata exige seleção explícita e aprovação do ambiente. O keystore ainda precisa ser gerado e os quatro secrets cadastrados; o procedimento está em [Configuração de assinatura de releases](docs/RELEASE-SIGNING-SETUP.md). Nunca envie o keystore ou as senhas ao Git.
+O padrão é `publish=false`, que cria uma release draft após aprovação. `publish=true` publica a release publicamente somente depois da mesma aprovação. O keystore ainda precisa ser gerado e os quatro secrets cadastrados; o procedimento está em [Configuração de assinatura de releases](docs/RELEASE-SIGNING-SETUP.md). Nunca envie o keystore ou as senhas ao Git.
 
 **Migração inicial de assinatura:** o MVP `1.0.0` foi instalado a partir de um APK debug assinado por uma chave efêmera do runner CI. A primeira release assinada com o keystore persistente terá certificado diferente e não poderá atualizar essa instalação in-place. Será necessária uma migração única autorizada, que apaga dados locais e exige cadastrar novamente a API Key. As atualizações seguintes preservam os dados desde que o certificado permaneça o mesmo.
 
