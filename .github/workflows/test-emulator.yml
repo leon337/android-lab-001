@@ -1,10 +1,25 @@
 name: Teste Android em emulador
 on:
   workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+      - feat/gemini-live-secure
+    paths:
+      - 'app/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - 'gradle.properties'
+      - '.github/scripts/**'
+      - '.github/workflows/test-emulator.yml'
 permissions:
   contents: read
+concurrency:
+  group: android-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   teste-android:
+    name: Android build + emulator
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -33,7 +48,7 @@ jobs:
         with:
           gradle-version: '8.13'
       - name: Compilar aplicativo e pacote de testes
-        run: gradle --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest
+        run: gradle --no-daemon :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Executar testes no Android virtual
         uses: reactivecircus/android-emulator-runner@v2
         with:
