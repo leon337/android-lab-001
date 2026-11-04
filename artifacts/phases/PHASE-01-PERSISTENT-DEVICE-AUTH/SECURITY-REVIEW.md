@@ -1,64 +1,74 @@
-# Revisão de segurança — PHASE-01
+# Revisão de segurança — Gemini Live Android (PR #2)
 
-**Tipo:** revisão técnica preliminar feita por MESTRE; não é auditoria independente.
+**Escopo:** MVP Android de conversação por voz e cliente Gemini Live.
+**Tipo:** self-review técnico de MESTRE, baseado no código e nas evidências disponíveis.
 **Veredito:** SELF_REVIEW_PASS_WITH_RESERVATIONS.
-**Auditoria independente Emily / gate Léo:** pendentes porque o runtime multiagente local não está disponível nesta sessão.
+**Auditoria independente:** não executada; este documento não é aprovação humana de merge.
 
-## Ativos e fluxo de dados
+## 1. Arquitetura efetivamente usada pelo APK
 
-- GEMINI_API_KEY: segredo permanente, mantido somente no backend Render.
-- LAB_PAIRING_CODE: segredo compartilhado de bootstrap, enviado somente no enrollment HTTPS e usado para derivar a chave HMAC.
-- Credencial do dispositivo: bearer token auto-contido, assinado HMAC-SHA256, validade de 365 dias.
-- Chave AES: criada e mantida pelo Android Keystore.
-- Credencial do dispositivo em repouso: cifrada com AES-GCM em SharedPreferences.
-- Token Gemini efêmero: emitido a cada sessão, usado no WebSocket e não persistido em claro.
-- Áudio: microfone Android envia PCM 16 kHz ao Google Live API; resposta PCM 24 kHz é reproduzida localmente.
+O APK usa conexão direta com a Gemini Live API. O broker Node/Render presente em backend/server.mjs é experimental e não é chamado pelo aplicativo.
 
-## Controles verificados no código
+1. LEANDRO cadastra sua própria chave API na tela de configurações.
+2. ApiKeyStore cifra a chave com AES-GCM e guarda o ciphertext em SharedPreferences privadas.
+3. A chave AES é mantida pelo Android Keystore.
+4. Ao iniciar uma sessão, o app envia a chave permanente por HTTPS ao endpoint Google v1beta/auth_tokens, no header x-goog-api-key.
+5. O pedido configura um token de uso único, com janela de 60 segundos para iniciar a sessão e expiração de 30 minutos.
+6. O app abre WebSocket WSS para BidiGenerateContentConstrained usando o token efêmero no header Authorization: Token. A chave API permanente não é enviada no WebSocket.
+7. O áudio PCM 16 kHz é transmitido ao Google e o áudio PCM 24 kHz é reproduzido localmente.
+8. Transcrições e estado da conversa permanecem em memória durante a sessão; não existe histórico persistente nesta fase.
 
-1. Comparação do código de pareamento por timingSafeEqual.
-2. Derivação HMAC com separação de domínio.
-3. Validação de assinatura, emissor, audiência, versão, UUID, iat e exp.
-4. Respostas sem cache (Cache-Control: no-store, Pragma: no-cache).
-5. Armazenamento AES-GCM com chave Android Keystore.
-6. Código de pareamento não é salvo pelo app.
-7. Chave Gemini não é compilada no APK.
-8. Logs não devem incluir tokens ou corpo bruto do provedor.
-9. A compatibilidade legada em /live/token é temporária e documentada.
-10. APK do commit fdd8b8c passou pela varredura de strings sem encontrar padrões de chave Google, LAB_PAIRING_CODE ou GEMINI_API_KEY.
+A documentação específica de tokens efêmeros do Google aceita o token no header Authorization: Token ou no parâmetro access_token. O cliente usa o header para evitar colocar a credencial na URL.
 
-## Achados e riscos residuais
+## 2. Controles observados
 
-| ID | Severidade | Achado | Tratamento |
+- Chave API cifrada com AES-GCM; chave AES no Android Keystore.
+- Nenhuma chave API fixa no APK, BuildConfig ou repositório.
+- HTTPS para emissão do token e WSS para a sessão Live.
+- Token efêmero de uso único e curta duração.
+- Token enviado no header Authorization: Token, não na query string.
+- Cliente HTTP de autenticação separado do WebSocket.
+- Timeouts finitos para autenticação: conexão 10 s, leitura 15 s, escrita 10 s e chamada total 25 s.
+- Cancelamento explícito da chamada de token ao encerrar ou falhar a sessão.
+- Ausência de interceptor de logging HTTP; erros são sanitizados antes de chegar à interface.
+- Buffer de áudio limitado a 32 chunks de até 64 KiB; sob pressão, descarta o áudio mais antigo.
+- Android backup desabilitado para os dados do aplicativo.
+
+## 3. Evidência funcional e CI
+
+Há evidência manual histórica do APK 1.0.0 instalado no OPPO RMX3491 / Android 13: emissão de token, abertura de WebSocket, transcrição de entrada, resposta textual, mute/unmute e persistência da chave após reinício. Essa evidência antecede as alterações atuais e não comprova uma sessão Live no HEAD atual do PR #2.
+
+A execução GitHub Actions 41749388734 concluiu com sucesso:
+- testes unitários;
+- compilação do APK debug e do pacote de testes instrumentados;
+- testes instrumentados no emulador;
+- smoke da interface, com confirmação do campo de API Key e dos dois modelos Live 3.8.
+
+O CI não usa uma API Key real e não inicia uma sessão Gemini Live real. Portanto, CI verde comprova build, testes e interface, não a integração ponta a ponta com a API do Google.
+
+## 4. Achados e riscos residuais
+
+| ID | Severidade | Achado | Controle / decisão |
 |---|---|---|---|
-| SEC-01 | Média | Credencial do dispositivo é bearer e pode ser reutilizada por quem a copiar até expirar. | Aceitável somente para laboratório privado; Keystore reduz exposição em repouso. |
-| SEC-02 | Média | Não existe revogação individual persistente. | Rotacionar LAB_PAIRING_CODE invalida todas as credenciais; registrar como limite do MVP. |
-| SEC-03 | Média | Rate limit de /live/token é em memória e reinicia com o processo. | Proteção complementar, não quota durável/distribuída. |
-| SEC-04 | Média | /auth/enroll não possui rate limit por IP nesta versão. | Exigir código de bootstrap gerado aleatoriamente com alta entropia; adicionar limitação durável antes de distribuição pública. |
-| SEC-05 | Média | A validade mínima de 32 caracteres do segredo não prova entropia suficiente. | Antes do deploy, confirmar que o segredo existente é aleatório e não uma frase escolhida manualmente; não ler nem registrar seu valor. |
-| SEC-06 | Média | Credencial é vinculada logicamente ao UUID, não a hardware/atestado do dispositivo. | Não afirmar proteção anti-clonagem física. |
-| SEC-07 | Média | Endpoint WebSocket de tokens efêmeros usa v1alpha conforme o SDK oficial. | Interface experimental/preview; validar ponta a ponta antes de depender do serviço. |
-| SEC-08 | Alta para aceite funcional | Ainda não existe evidência de sessão WebSocket Gemini real com o APK corrigido. | Não declarar integração funcional até teste autorizado após deploy. |
-| SEC-09 | Baixa | A descrição atual do PR #2 contém texto legado que não reflete todos os resultados recentes. | Atualização do corpo do PR é uma escrita pública e fica pendente de gate interno. |
+| SEC-01 | Média | A chave API existe no cliente e pode ser extraída de um dispositivo comprometido, com root ou instrumentação em runtime. | AES-GCM/Keystore protege em repouso, mas não torna um segredo de cliente impossível de extrair. Uso privado; não distribuir APK com chave cadastrada. |
+| SEC-02 | Média | A restrição da chave Google ao package Android e ao certificado de assinatura permanente ainda depende da migração para a assinatura persistente. | Após a migração autorizada, restringir a chave ao package br.com.laboratorio.android e ao certificado de release. |
+| SEC-03 | Média | Um token efêmero pode ser reutilizado se for capturado durante sua janela válida, embora seja de uso único e curta duração. | Transporte no header Authorization: Token, WSS, ausência de logging interceptor e sanitização de erros. Não registrar headers de autenticação. |
+| SEC-04 | Média | O cliente conecta diretamente à API e não possui rate limit central próprio. | A cota depende do projeto Google; reavaliar limites e restrições antes de distribuição. |
+| SEC-05 | Média | Gemini Live e seus modelos usam uma superfície de API sujeita a mudanças de compatibilidade. | Validar sessão real em cada release; não tratar CI sem credencial como prova de sessão Live. |
+| SEC-06 | Alta para operação | O certificado debug do APK instalado é diferente do certificado persistente de release. | A primeira migração exige desinstalação e perda de dados locais; bloqueada até HUMAN_GATE específico de LEANDRO. |
+| SEC-07 | Média | O broker em backend/server.mjs não integra o fluxo atual e tem configuração e ameaças próprias. | Mantê-lo inativo e fora do release Android; avaliar em fase separada antes de qualquer deploy. |
 
-## Protocolo Gemini verificado
+## 5. Estado de publicação e governança
 
-- O backend cria o token efêmero pela API REST v1beta/auth_tokens.
-- O SDK oficial Google identifica tokens auth_tokens/..., seleciona BidiGenerateContentConstrained, envia Authorization: Token ... e informa que a conexão efêmera é suportada em v1alpha.
-- O Android foi corrigido para usar v1alpha no WebSocket. Essa correção foi compilada e testada no emulador; não prova, por si só, uma sessão real com o Google.
-- Modelo: gemini-3.8-live-extended-thinking; thinking level: LOW.
-- A API de tokens efêmeros está em preview/experimental. A compatibilidade deve ser reavaliada antes de qualquer distribuição pública.
+- PR #2 permanece OPEN / DRAFT.
+- PR #3 permanece OPEN / DRAFT e depende do PR #2.
+- Nenhum merge foi executado.
+- Nenhuma release estável foi publicada.
+- Nenhum deploy ou ativação do broker foi executado nesta preparação.
+- Nenhuma API Key foi lida, exportada ou alterada nesta revisão.
+- Nenhum keystore persistente foi gerado e nenhum secret de assinatura foi configurado.
+- Nenhuma instalação, desinstalação, limpeza de dados ou migração foi realizada no telefone.
 
-## Condições para aceitar o risco no laboratório
+## 6. Limite do parecer
 
-1. Uso privado, por um único operador/dispositivo controlado.
-2. LAB_PAIRING_CODE deve ser aleatório, forte e nunca embutido no APK.
-3. GEMINI_API_KEY permanece somente no Render.
-4. Não publicar o APK nem abrir enrollment a múltiplos usuários.
-5. Não ativar billing ou plano pago sem gate humano específico.
-6. Testar enrollment, refresh, token efêmero e WebSocket real após deploy autorizado.
-7. Planejar remoção da rota legada após migração confirmada.
-
-## Limite do parecer
-
-Este documento é uma revisão preliminar de MESTRE baseada em código, testes e documentação oficial. Não substitui a revisão de Ricardo/Júlia, a auditoria independente de Emily nem a decisão de Léo. O status da fase permanece EM_REVISAO.
+Este é um self-review técnico de MESTRE. Não houve auditoria independente de Emily, Ricardo ou Júlia nem gate operacional de outro agente. O parecer não substitui a revisão humana de LEANDRO e não autoriza merge, publicação, deploy ou operação no telefone.
