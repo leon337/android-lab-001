@@ -333,14 +333,12 @@ class GeminiLiveClient(
         }
 
         val content = packet.optJSONObject("serverContent")
-        val interactionStatus = packet.optString("interactionStatus")
-            .ifBlank { content?.optString("interactionStatus", "").orEmpty() }
-        if (interactionStatus.isNotBlank()) {
-            listener.onInteractionStatus(interactionStatus)
+        val signals = parseGeminiServerSignals(packet)
+        if (signals.interactionStatus.isNotBlank()) {
+            listener.onInteractionStatus(signals.interactionStatus)
         }
 
-
-        if (packet.has("goAway")) {
+        if (signals.goAway) {
             listener.onNotice("O Google vai encerrar esta sessão em breve. Reinicie a conversa se necessário.")
         }
 
