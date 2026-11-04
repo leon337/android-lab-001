@@ -101,6 +101,7 @@ Não use repository secrets: o job de compilação consome os secrets do ambient
 
 - `android-signing`: sem reviewer; deployment branch policy restrita a `main`.
 - `android-release`: reviewer obrigatório `leon337` (LEANDRO), self-review permitido, bypass de administradores desabilitado e deployment branch policy restrita a `main`.
+- Branch `main`: protegida; exige PR e check `Android build + emulator` atualizado, exige resolução de conversas, bloqueia force-push e exclusão e não permite bypass administrativo. O contador de aprovações GitHub é zero porque o repositório tem uma única identidade proprietária; o gate humano MCF continua obrigatório antes do merge.
 
 ## Publicação de uma versão
 

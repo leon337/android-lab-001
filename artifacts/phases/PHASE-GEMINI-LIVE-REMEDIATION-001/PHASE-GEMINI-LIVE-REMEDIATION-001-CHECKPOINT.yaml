@@ -1,0 +1,71 @@
+mission_id: MCF-GEMINI-LIVE-REMEDIATION-001
+phase_id: PHASE-GEMINI-LIVE-REMEDIATION-001
+cycle: 1
+state: IMPLEMENTADO_CI_APROVADO_AGUARDANDO_REVISÃO_HUMANA_E_ASSINATURA
+risk_class: B
+permission_profile: SCOPED_WRITE
+coordinator: MESTRE
+human_authority: LEANDRO
+repository: leon337/android-lab-001
+branch_pr2: feat/gemini-live-secure
+branch_pr3: feat/phase-01-version-updates-personalities
+baseline_tag: v1.0.0-mvp.1
+commits:
+  pr2_code: f348cd60f2f45ba48a095e2414867ac89b092fad
+  pr3_code_tested: 1cc0b79ef33b62c92a431ab3f2fb08af682b1a23
+pull_requests:
+  - number: 2
+    state: open
+    draft: true
+    base: main
+    head: f348cd60f2f45ba48a095e2414867ac89b092fad
+    ci_run: 41748065888
+    ci_conclusion: success
+  - number: 3
+    state: open
+    draft: true
+    base: feat/gemini-live-secure
+    head_code_tested: 1cc0b79ef33b62c92a431ab3f2fb08af682b1a23
+    ci_run: 41748591796
+    ci_conclusion: success
+checks:
+  pr2_build_unit_and_emulator: PASS
+  pr3_build_unit_and_emulator: PASS
+  pr3_instrumented_tests: PASS_17_OF_17
+  pr3_ui_smoke: PASS
+  yaml_parse: PASS
+  bash_syntax: PASS
+  git_diff_check: PASS
+  branch_protection_main: CONFIGURED
+  environment_android_signing: CONFIGURED_MAIN_ONLY_NO_SECRETS
+  environment_android_release: CONFIGURED_REVIEWER_LEANDRO_MAIN_ONLY
+security:
+  persistent_keystore_created: false
+  android_signing_secrets_configured: false
+  android_release_secrets_configured: false
+  api_key_read_or_changed: false
+  broker_deployed: false
+phone:
+  installed_version_preserved: true
+  install_or_uninstall_performed: false
+  data_cleared: false
+  migration_authorized: false
+release:
+  workflow_two_stage: true
+  draft_created: false
+  public_release_created: false
+  publish_authorized: false
+open_gates:
+  - id: G-01
+    owner: LEANDRO
+    description: "Review PR #2 and PR #3; ambos continuam draft."
+  - id: G-02
+    owner: LEANDRO
+    description: "Generate persistent PKCS#12 locally and configure four secrets in android-signing."
+  - id: G-03
+    owner: LEANDRO
+    description: "Authorize release execution after PR integration and inspect the signed artifact before approval in android-release."
+  - id: G-04
+    owner: LEANDRO
+    description: "Authorize one-time phone migration separately after signed APK verification; migration deletes local data."
+next_action: "Human review of PR #2 and PR #3; no merge until explicit authorization."

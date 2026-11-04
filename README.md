@@ -71,6 +71,7 @@ O workflow manual **Publicar versão Android assinada** só executa a partir de 
 - `android-release`: gate de publicação, com aprovação obrigatória de LEANDRO, branch policy restrita a `main` e bypass administrativo desabilitado.
 
 O primeiro job compila e assina o APK usando os secrets de `android-signing`, depois publica APK, manifesto e evidências como artifact do workflow. Somente depois disso o job de publicação aguarda aprovação em `android-release`; LEANDRO pode inspecionar o artifact antes de aprovar.
+A branch `main` também está protegida: exige PR e o check `Android build + emulator` atualizado, resolução de conversas, bloqueia force-push/exclusão e não permite bypass administrativo. A contagem de aprovações GitHub é zero porque o repositório tem uma única identidade proprietária; a revisão humana e o gate MCF continuam obrigatórios antes de qualquer merge.
 
 Os Environment secrets ficam exclusivamente em `android-signing`:
 - `ANDROID_SIGNING_KEYSTORE_BASE64`
