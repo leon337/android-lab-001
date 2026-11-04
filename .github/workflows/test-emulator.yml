@@ -2,16 +2,11 @@ name: Teste Android em emulador
 on:
   workflow_dispatch:
   pull_request:
+    # No path filter: branch protection requires this check for every PR,
+    # including documentation-only changes.
     branches:
       - main
       - feat/gemini-live-secure
-    paths:
-      - 'app/**'
-      - 'build.gradle.kts'
-      - 'settings.gradle.kts'
-      - 'gradle.properties'
-      - '.github/scripts/**'
-      - '.github/workflows/test-emulator.yml'
 permissions:
   contents: read
 concurrency:
