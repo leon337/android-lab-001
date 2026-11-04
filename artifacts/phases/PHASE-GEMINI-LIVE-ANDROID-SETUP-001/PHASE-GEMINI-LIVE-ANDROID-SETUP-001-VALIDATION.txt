@@ -1,0 +1,25 @@
+VALIDATION SUMMARY
+==================
+
+PASS: MCF canonical repository consulted.
+PASS: MCF operational protocol v1.1 consulted.
+PASS: Desktop Commander host leo-N43SM online.
+PASS: ADB Wi-Fi device identified: OPPO RMX3491 / Android 13.
+PASS: Dedicated Google AI Studio project created:
+      android-lab-001-gemini-mobile
+PASS: Dedicated Gemini API key created and restricted to Gemini API.
+PASS: Project billing remained Free; no paid billing/trial enabled.
+PASS: User authorized uninstall/replacement of old package.
+PASS: Old app removed and new APK installed successfully.
+PASS: Installed package br.com.laboratorio.android.
+PASS: Installed versionName 1.0.0 / versionCode 2.
+PASS: User confirmed API key configured and Live conversation tested.
+PASS: Encrypted preference entry encrypted_api_key exists (108 chars).
+PASS: No plaintext AIza prefix found in secure preferences.
+PASS: Manual conversation tests observed token, WebSocket, input transcription and Gemini text response.
+PASS: Mute blocked microphone forwarding; unmute restored conversation.
+PASS: App restart retained the configured API key and allowed reconnection.
+OPEN: Android application restriction is not configured for Google API key.
+OPEN: Stable release signing key migration is required for in-app updates.
+NOT RUN: Physical speaker output quality measurement.
+NOT RUN: Automated Android tests on the physical device.

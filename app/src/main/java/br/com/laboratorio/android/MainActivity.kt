@@ -1,8 +1,12 @@
 package br.com.laboratorio.android
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -59,6 +63,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import br.com.laboratorio.android.live.ChatLine
@@ -66,13 +71,21 @@ import br.com.laboratorio.android.live.LiveSettings
 import br.com.laboratorio.android.live.LiveViewModel
 import br.com.laboratorio.android.live.ModelCatalog
 import br.com.laboratorio.android.live.Phase
+import br.com.laboratorio.android.personality.BehaviorCatalog
+import br.com.laboratorio.android.personality.BehaviorOption
+import br.com.laboratorio.android.personality.PersonalityCatalog
+import br.com.laboratorio.android.update.AppUpdateViewModel
+import br.com.laboratorio.android.update.AppUpdatesScreen
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: LiveViewModel
+    private lateinit var updateViewModel: AppUpdateViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel = ViewModelProvider(this)[LiveViewModel::class.java]
+        updateViewModel = ViewModelProvider(this)[AppUpdateViewModel::class.java]
 
         setContent {
             MaterialTheme(
@@ -84,7 +97,7 @@ class MainActivity : ComponentActivity() {
                     error = Color(0xFFFF8A80),
                 ),
             ) {
-                GeminiLiveApp(viewModel)
+                GeminiLiveApp(viewModel, updateViewModel, ::installDownloadedApk)
             }
         }
     }
@@ -95,22 +108,55 @@ class MainActivity : ComponentActivity() {
             viewModel.stop()
         }
     }
+
+    private fun installDownloadedApk(file: File) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                    Uri.parse("package:$packageName"),
+                ),
+            )
+            return
+        }
+
+        val contentUri = FileProvider.getUriForFile(
+            this,
+            "$packageName.fileprovider",
+            file,
+        )
+        val installerIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(contentUri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(installerIntent)
+    }
 }
 
 @Composable
-private fun GeminiLiveApp(viewModel: LiveViewModel) {
+private fun GeminiLiveApp(
+    viewModel: LiveViewModel,
+    updateViewModel: AppUpdateViewModel,
+    onInstallApk: (File) -> Unit,
+) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
     var showSettings by rememberSaveable {
         mutableStateOf(settings.apiKey.isBlank())
     }
+    var showUpdates by rememberSaveable { mutableStateOf(false) }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background,
     ) {
         Box(Modifier.fillMaxSize().safeDrawingPadding()) {
-            if (showSettings) {
-                SettingsScreen(
+            when {
+                showUpdates -> AppUpdatesScreen(
+                    viewModel = updateViewModel,
+                    onBack = { showUpdates = false },
+                    onInstall = onInstallApk,
+                )
+                showSettings -> SettingsScreen(
                     initial = settings,
                     canCancel = settings.apiKey.isNotBlank(),
                     onSave = {
@@ -118,12 +164,10 @@ private fun GeminiLiveApp(viewModel: LiveViewModel) {
                         showSettings = false
                     },
                     onCancel = { showSettings = false },
-                    onClearApiKey = {
-                        viewModel.clearApiKey()
-                    },
+                    onClearApiKey = { viewModel.clearApiKey() },
+                    onOpenUpdates = { showUpdates = true },
                 )
-            } else {
-                ChatScreen(
+                else -> ChatScreen(
                     viewModel = viewModel,
                     onOpenSettings = { showSettings = true },
                 )
@@ -139,6 +183,7 @@ private fun SettingsScreen(
     onSave: (LiveSettings) -> Unit,
     onCancel: () -> Unit,
     onClearApiKey: () -> Unit,
+    onOpenUpdates: () -> Unit,
 ) {
     var apiKey by remember(initial.apiKey) { mutableStateOf(initial.apiKey) }
     var showKey by remember { mutableStateOf(false) }
@@ -147,6 +192,11 @@ private fun SettingsScreen(
     var thinking by remember(initial.thinkingLevel) { mutableStateOf(initial.thinkingLevel) }
     var prompt by remember(initial.systemPrompt) { mutableStateOf(initial.systemPrompt) }
     var speaker by remember(initial.speaker) { mutableStateOf(initial.speaker) }
+    var personalityId by remember(initial.personalityId) { mutableStateOf(initial.personalityId) }
+    var verbosity by remember(initial.verbosity) { mutableStateOf(initial.verbosity) }
+    var tone by remember(initial.tone) { mutableStateOf(initial.tone) }
+    var initiative by remember(initial.initiative) { mutableStateOf(initial.initiative) }
+    var approach by remember(initial.approach) { mutableStateOf(initial.approach) }
     var voiceMenu by remember { mutableStateOf(false) }
 
     Column(
@@ -253,6 +303,46 @@ private fun SettingsScreen(
             }
         }
 
+        HorizontalDivider()
+        Text("Personalidade do assistente", style = MaterialTheme.typography.titleMedium)
+        Text(
+            "Escolha o perfil de atuação. Os controles comportamentais abaixo refinam o perfil selecionado.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        PersonalityCatalog.options.forEach { option ->
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .selectable(
+                        selected = personalityId == option.id,
+                        onClick = { personalityId = option.id },
+                        role = Role.RadioButton,
+                    )
+                    .testTag("personality-${option.id}")
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = personalityId == option.id, onClick = null)
+                Column(Modifier.padding(start = 8.dp)) {
+                    Text(option.name, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        option.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
+        HorizontalDivider()
+        Text("Comportamento", style = MaterialTheme.typography.titleMedium)
+        BehaviorDropdown("Nível de detalhe", verbosity, BehaviorCatalog.verbosity) { verbosity = it }
+        BehaviorDropdown("Tom de voz", tone, BehaviorCatalog.tone) { tone = it }
+        BehaviorDropdown("Iniciativa", initiative, BehaviorCatalog.initiative) { initiative = it }
+        BehaviorDropdown("Abordagem", approach, BehaviorCatalog.approach) { approach = it }
+
+        HorizontalDivider()
         Text("Voz do assistente", style = MaterialTheme.typography.titleSmall)
         Box {
             OutlinedButton(onClick = { voiceMenu = true }) {
@@ -292,8 +382,16 @@ private fun SettingsScreen(
             modifier = Modifier.fillMaxWidth().testTag("system-prompt"),
             minLines = 3,
             maxLines = 6,
-            label = { Text("Instruções do assistente") },
+            label = { Text("Instruções adicionais (opcional)") },
+            placeholder = { Text("Adicione regras específicas para este assistente.") },
         )
+
+        OutlinedButton(
+            onClick = onOpenUpdates,
+            modifier = Modifier.fillMaxWidth().height(48.dp).testTag("open-updates"),
+        ) {
+            Text("Versões e atualizações do aplicativo")
+        }
 
         Button(
             onClick = {
@@ -305,6 +403,11 @@ private fun SettingsScreen(
                         thinkingLevel = thinking,
                         systemPrompt = prompt,
                         speaker = speaker,
+                        personalityId = personalityId,
+                        verbosity = verbosity,
+                        tone = tone,
+                        initiative = initiative,
+                        approach = approach,
                     ),
                 )
             },
@@ -331,6 +434,45 @@ private fun SettingsScreen(
                 Text("Remover chave API")
             }
         }
+    }
+}
+
+@Composable
+private fun BehaviorDropdown(
+    label: String,
+    selectedId: String,
+    options: List<BehaviorOption>,
+    onSelected: (String) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selected = options.firstOrNull { it.id == selectedId } ?: options.first()
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Box {
+            OutlinedButton(onClick = { expanded = true }) {
+                Text(selected.label)
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(option.label) },
+                        onClick = {
+                            onSelected(option.id)
+                            expanded = false
+                        },
+                    )
+                }
+            }
+        }
+        Text(
+            selected.instruction,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -390,7 +532,7 @@ private fun ChatScreen(
             Column(Modifier.weight(1f)) {
                 Text("Gemini Live", style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    ModelCatalog.labelFor(settings.model),
+                    "${ModelCatalog.labelFor(settings.model)} • ${PersonalityCatalog.find(settings.personalityId).name}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

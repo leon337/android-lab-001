@@ -1,0 +1,87 @@
+FULL VALIDATION EVIDENCE
+========================
+
+MCF
+---
+Canonical repository: leon337/multiagent-collaboration-framework
+Coordinator: MESTRE
+Human authority: LEANDRO
+Local-agent runtime: unavailable in current tool inventory; no secondary agent participation is claimed.
+
+REPOSITORY / PRS
+----------------
+Repository: leon337/android-lab-001
+PR #2: OPEN / DRAFT; base main; head f348cd60f2f45ba48a095e2414867ac89b092fad.
+PR #3: OPEN / DRAFT; base feat/gemini-live-secure; code head tested 1cc0b79ef33b62c92a431ab3f2fb08af682b1a23.
+PR #3 incorporates PR #2 commit f348cd6; no force push was used.
+
+PR #2 CI
+--------
+Workflow: Teste Android em emulador
+Run: https://github.com/leon337/android-lab-001/actions/runs/41748065888
+Event: pull_request
+Conclusion: success
+Job: Android build + emulator
+Successful steps: Java 17, Android SDK, Gradle, :app:testDebugUnitTest, assembleDebug, assembleDebugAndroidTest, connectedDebugAndroidTest and UI smoke.
+
+PR #3 CI
+--------
+Workflow: Teste Android em emulador
+Run: https://github.com/leon337/android-lab-001/actions/runs/41748591796
+Event: pull_request
+Conclusion: success
+Job: Android build + emulator
+Build step: success; unit-test task and debug/debugAndroidTest artifacts built.
+Instrumentation: 17 tests started and 17 tests finished; step success.
+UI smoke: MainActivity opened; API key field visible; Gemini 3.8 Live and Gemini 3.8 Live Extended Thinking visible.
+Screenshot and emulator reports uploaded as artifact `android-lab-001-emulador-evidencias` (artifact id 13284727674; SHA-256 digest 2c2369e0ca02b171b7d3bd75183a7193751d340f5aa850d669bbe2a1d0e9107e).
+
+CODE VALIDATION
+---------------
+PR #2:
+- Auth HTTP client: connect 10s, read 15s, write 10s, call 25s.
+- Active token call cancelled on stop/fail.
+- Ephemeral token moved to Authorization: Token header.
+- Audio queue bounded to 32 chunks, 64 KiB per chunk; oldest chunk dropped under backpressure.
+- Three unit test methods cover overflow policy, invalid chunks and clear.
+
+PR #3:
+- Manifest SHA-256 checked before APK request.
+- APK size checked against declared asset size and actual bytes; 200 MiB cap.
+- APK downloaded to private temporary file and removed on failure.
+- APK SHA-256, packageName, versionName, versionCode, minSdk from archive and signing certificate verified before atomic promotion.
+- Nine instrumented tests cover success, manifest digest, APK digest, size, archive package, version, signer, archive minSdk and device-incompatible minSdk.
+
+GITHUB GOVERNANCE
+-----------------
+main protected: true.
+Required check context: Android build + emulator; strict up-to-date required.
+Pull request required; conversation resolution required.
+Force pushes: disabled. Deletions: disabled. Admin bypass: disabled.
+Required GitHub approval count: 0 because the repository has one owner identity; MCF human review gate remains mandatory.
+Environment android-signing: created; branch policy main; no reviewers; no secrets.
+Environment android-release: required reviewer LEANDRO; branch policy main; admin bypass disabled; no secrets.
+
+RELEASE / SECRETS
+-----------------
+Release workflow now has build-release and publish-release jobs.
+Build job signs and uploads artifact under android-signing.
+Publish job waits for android-release approval after artifact exists and revalidates APK hash/certificate.
+publish=false creates draft; publish=true publishes only after environment approval.
+Keystore PKCS#12: NOT GENERATED.
+Environment signing secrets: NONE CONFIGURED.
+No secrets read, created, changed or printed.
+No release draft or public release created.
+Workflow not executed.
+
+DEVICE / API
+------------
+No ADB install/uninstall/data clear.
+No phone migration.
+No API Key read/export/change.
+No Gemini Live real session or billing call from CI.
+Broker backend not deployed or activated.
+
+LOCAL LIMITATION
+----------------
+Notebook had no Java/Gradle installation; Android build and tests executed on GitHub Actions. Local checks performed: git diff --check, YAML parse and bash -n.

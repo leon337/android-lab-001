@@ -1,0 +1,31 @@
+VALIDATION SUMMARY
+==================
+
+PASS: Baseline tag v1.0.0-mvp.1 exists on origin.
+PASS: Phase branch feat/phase-01-version-updates-personalities pushed.
+PASS: Six personality presets and four behavior controls implemented.
+PASS: Preferences persisted and included in Gemini systemInstruction.
+PASS: Stable GitHub Releases parser filters draft, prerelease and incomplete releases.
+PASS: Manifest SHA-256 digest required.
+PASS: Release asset URLs restricted to HTTPS GitHub repository path.
+PASS: Manifest reads bounded to 64 KiB.
+PASS: APK package/version/minSdk/SHA-256/signing certificate validation implemented.
+PASS: Private download and FileProvider installation flow implemented.
+PASS: Android installer requires user confirmation.
+PASS: Downgrade blocked.
+PASS: Strict SemVer and versionCode overflow checks implemented.
+PASS: Release workflow restricted to main and tag ancestor of main; draft by default.
+PASS: GitHub Environment android-release configured with LEANDRO reviewer and main branch policy.
+PASS: Administrator bypass disabled.
+PASS: Build APK run 41730256790.
+PASS: Eight instrumented tests passed in run 41730261955.
+PASS: Final emulator run 41731678974, including UI smoke.
+PASS: UI evidence contains API key field and both Gemini 3.8 Live models.
+PASS: Screenshot evidence generated at 1080x2400.
+PASS: git diff --check.
+PASS: YAML parse.
+PASS: Bash syntax checks.
+BLOCKED: PKCS#12 keystore and four Environment secrets not configured.
+BLOCKED: Release workflow is not on main until PR integration.
+PENDING: Human review of PR #2 and PR #3.
+NOT RUN: Merge, public release, OPPO install/uninstall/data clear.

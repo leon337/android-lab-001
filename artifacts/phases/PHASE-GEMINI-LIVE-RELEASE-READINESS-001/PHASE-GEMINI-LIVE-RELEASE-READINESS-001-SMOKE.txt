@@ -1,0 +1,23 @@
+RELEASE READINESS SMOKE
+=======================
+
+PASS: GitHub environment android-release exists.
+PASS: LEANDRO is required reviewer.
+PASS: only main is an allowed deployment branch.
+PASS: administrator bypass is disabled.
+PASS: release workflow defaults to draft.
+PASS: release workflow checks main and tag ancestry.
+PASS: strict SemVer/versionCode validation is present.
+PASS: update catalog requires manifest digest and trusted GitHub URLs.
+PASS: manifest reads are bounded.
+PASS: no release has been published.
+PASS: phone and existing app data remain untouched.
+PASS: Build APK workflow 41730256790.
+PASS: Eight instrumented tests in 41730261955.
+PASS: Final emulator workflow 41731678974.
+PASS: UI smoke found API key field and both Gemini 3.8 Live models.
+PASS: Screenshot and XML evidence published as workflow artifact.
+PASS: 13 backend tests with fake provider.
+WARNING: Android workflows are manual-only; no automatic PR checks.
+WARNING: main is not branch-protected; release Environment has its own reviewer gate.
+BLOCKED: keystore and environment secrets remain unconfigured.

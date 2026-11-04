@@ -1,0 +1,57 @@
+FULL VALIDATION EVIDENCE
+========================
+
+Host: leo-N43SM
+Desktop Commander device: c1fcefcb-a432-4283-9841-c233761b653d
+ADB transport observed: adb-9a179f5d-xCYr1B._adb-tls-connect._tcp
+Phone model: RMX3491
+Android release: 13
+Package: br.com.laboratorio.android
+Installed version: versionCode 2 / versionName 1.0.0
+
+APK:
+  User download: /home/leo/Downloads/gemini-live.apk
+  CI artifact: /home/leo/Downloads/gemini-live-latest/app-debug.apk
+  SHA-256: 3fa471425bb932b637828083dc7e1ae036fc9c03e3cf2abb60e0b6f81c432dcf
+  Workflow run: 41712115838
+  Source branch: feat/gemini-live-secure
+  Source SHA: 934dcafed30f7eeba4eac32d14725aa73ac37152
+
+Google:
+  Project: android-lab-001-gemini-mobile
+  Project ID: gen-lang-client-0649344407
+  Key display name: android-lab-001-gemini-mobile-android-app
+  Key ID: d281f5c4-40df-4384-8a1c-80e1d193f6fc
+  API restriction: Gemini API
+  Application restriction: None
+  Billing: Free / no billing enabled
+
+Installation:
+  Old package removed after explicit LEANDRO authorization.
+  New package installed through Wi-Fi ADB.
+  Installed versionCode=2 / versionName=1.0.0.
+  Old app local data and Android Keystore entries were removed as part of uninstall.
+
+Credential storage:
+  File: shared_prefs/gemini_live_secure_settings.xml
+  Entry name: encrypted_api_key
+  Stored value length: 108 characters.
+  Plaintext prefix check: no AIza prefix found.
+  Secret values were not read or displayed.
+
+Conversation:
+  Token request: success observed.
+  Gemini Live WebSocket: success observed.
+  Session setup: success observed.
+  Input transcription: success observed.
+  Gemini response transcription: success observed.
+  Mute: blocked microphone forwarding.
+  Unmute: resumed conversation.
+  App restart: saved key remained usable and new session connected.
+
+Open security/operational findings:
+  1. Google key application restriction is not configured. API restriction Gemini API is active.
+  2. Installed APK uses ephemeral CI debug signing. Stable release signing migration is required before in-app updates.
+  3. Physical speaker output quality was not measured remotely.
+
+No API key, ephemeral token, or password is stored in this evidence file.

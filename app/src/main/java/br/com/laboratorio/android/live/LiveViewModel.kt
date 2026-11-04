@@ -43,9 +43,15 @@ class LiveViewModel(app: Application) : AndroidViewModel(app), GeminiLiveClient.
             ?: ModelCatalog.DEFAULT_MODEL,
         voice = preferences.getString(KEY_VOICE, "Puck") ?: "Puck",
         thinkingLevel = preferences.getString(KEY_THINKING, "low") ?: "low",
-        systemPrompt = preferences.getString(KEY_PROMPT, DEFAULT_SYSTEM_PROMPT)
-            ?: DEFAULT_SYSTEM_PROMPT,
+        systemPrompt = preferences.getString(KEY_PROMPT, null)
+            ?.takeUnless { it == DEFAULT_SYSTEM_PROMPT }
+            .orEmpty(),
         speaker = preferences.getBoolean(KEY_SPEAKER, true),
+        personalityId = preferences.getString(KEY_PERSONALITY, "balanced") ?: "balanced",
+        verbosity = preferences.getString(KEY_VERBOSITY, "balanced") ?: "balanced",
+        tone = preferences.getString(KEY_TONE, "natural") ?: "natural",
+        initiative = preferences.getString(KEY_INITIATIVE, "responsive") ?: "responsive",
+        approach = preferences.getString(KEY_APPROACH, "analytical") ?: "analytical",
     )
 
     fun saveSettings(value: LiveSettings) {
@@ -62,6 +68,11 @@ class LiveViewModel(app: Application) : AndroidViewModel(app), GeminiLiveClient.
             .putString(KEY_THINKING, normalized.thinkingLevel)
             .putString(KEY_PROMPT, normalized.systemPrompt)
             .putBoolean(KEY_SPEAKER, normalized.speaker)
+            .putString(KEY_PERSONALITY, normalized.personalityId)
+            .putString(KEY_VERBOSITY, normalized.verbosity)
+            .putString(KEY_TONE, normalized.tone)
+            .putString(KEY_INITIATIVE, normalized.initiative)
+            .putString(KEY_APPROACH, normalized.approach)
             .apply()
 
         _settings.value = normalized
@@ -205,5 +216,10 @@ class LiveViewModel(app: Application) : AndroidViewModel(app), GeminiLiveClient.
         const val KEY_THINKING = "thinking_level"
         const val KEY_PROMPT = "system_prompt"
         const val KEY_SPEAKER = "speaker"
+        const val KEY_PERSONALITY = "personality"
+        const val KEY_VERBOSITY = "behavior_verbosity"
+        const val KEY_TONE = "behavior_tone"
+        const val KEY_INITIATIVE = "behavior_initiative"
+        const val KEY_APPROACH = "behavior_approach"
     }
 }

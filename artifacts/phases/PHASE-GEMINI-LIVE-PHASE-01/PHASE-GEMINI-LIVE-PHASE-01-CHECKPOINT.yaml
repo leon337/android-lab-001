@@ -1,0 +1,61 @@
+mission_id: MCF-GEMINI-LIVE-PHASE-01
+phase_id: PHASE-GEMINI-LIVE-PHASE-01
+cycle: 4
+state: IMPLEMENTADO_CI_APROVADO_AGUARDANDO_GATES_DE_ASSINATURA_E_REVISÃO_HUMANA
+risk_class: B
+permission_profile: SCOPED_WRITE
+coordinator: MESTRE
+human_authority: LEANDRO
+repository: leon337/android-lab-001
+base_commit: 934dcafed30f7eeba4eac32d14725aa73ac37152
+baseline_tag: v1.0.0-mvp.1
+branch: feat/phase-01-version-updates-personalities
+code_head_commit: 77a53f3653b04f314741416399772931765a995f
+pull_request:
+  number: 3
+  state: open
+  draft: true
+  base: feat/gemini-live-secure
+  head: feat/phase-01-version-updates-personalities
+target_version:
+  version_name: 1.1.0
+  version_code: 10100
+checks:
+  git_diff_check: PASS
+  yaml_parse: PASS
+  workflow_bash_syntax: PASS
+  emulator_script_bash_syntax: PASS
+  build_run_41730256790: PASS
+  instrumented_tests_run_41731678974: PASS
+  ui_smoke_run_41731678974: PASS
+  screenshot_evidence: PASS
+  independent_security_audit: NOT_RUN
+signing:
+  keystore_created: false
+  github_environment_secrets_configured: false
+  release_workflow_on_main: false
+  release_workflow_default: DRAFT
+  migration_required: true
+  migration_authorized: false
+github_environment:
+  name: android-release
+  required_reviewer: leon337
+  allowed_branch: main
+  can_admins_bypass: false
+phone:
+  model: RMX3491
+  installed_version_name: 1.0.0
+  installed_version_code: 2
+  current_app_data_modified: false
+  app_uninstalled: false
+open_gates:
+  - id: G-01
+    owner: LEANDRO
+    description: "Generate persistent PKCS#12 keystore locally and configure four Environment secrets."
+  - id: G-02
+    owner: LEANDRO
+    description: "Review PR #2 and PR #3 before merge."
+  - id: G-03
+    owner: LEANDRO
+    description: "Authorize one-time phone migration only after signed v1.1.0 is verified."
+next_action: "Complete local signing procedure, human PR review, and prepare draft v1.1.0 release."

@@ -1,5 +1,9 @@
 package br.com.laboratorio.android.live
 
+import br.com.laboratorio.android.personality.BehaviorCatalog
+import br.com.laboratorio.android.personality.PersonalityCatalog
+import br.com.laboratorio.android.personality.composeAssistantSystemInstruction
+
 const val DEFAULT_SYSTEM_PROMPT =
     "Você é um assistente de voz objetivo e natural. Responda sempre em português do Brasil, " +
         "com frases claras e curtas. Converse como uma pessoa, sem mencionar que está lendo transcrições."
@@ -9,9 +13,23 @@ data class LiveSettings(
     val model: String = ModelCatalog.DEFAULT_MODEL,
     val voice: String = "Puck",
     val thinkingLevel: String = "low",
-    val systemPrompt: String = DEFAULT_SYSTEM_PROMPT,
+    val systemPrompt: String = "",
     val speaker: Boolean = true,
-)
+    val personalityId: String = PersonalityCatalog.DEFAULT_ID,
+    val verbosity: String = BehaviorCatalog.DEFAULT_VERBOSITY,
+    val tone: String = BehaviorCatalog.DEFAULT_TONE,
+    val initiative: String = BehaviorCatalog.DEFAULT_INITIATIVE,
+    val approach: String = BehaviorCatalog.DEFAULT_APPROACH,
+) {
+    fun effectiveSystemInstruction(): String = composeAssistantSystemInstruction(
+        personalityId = personalityId,
+        verbosity = verbosity,
+        tone = tone,
+        initiative = initiative,
+        approach = approach,
+        customInstructions = systemPrompt,
+    )
+}
 
 object ModelCatalog {
     const val DEFAULT_MODEL = "gemini-3.8-live"

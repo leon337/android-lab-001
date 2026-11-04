@@ -1,0 +1,17 @@
+SMOKE TEST — GITHUB ACTIONS
+===========================
+
+PR #2 run 41748065888: SUCCESS.
+PR #3 run 41748591796: SUCCESS.
+
+PR #3 emulator:
+- Instrumentation: 17 tests started; 17 tests finished; successful.
+- MainActivity launch: SUCCESS.
+- API Key field visible: PASS.
+- Gemini 3.8 Live option visible: PASS.
+- Gemini 3.8 Live Extended Thinking option visible: PASS.
+- Screenshot and XML evidence uploaded.
+
+LIMITATIONS
+-----------
+This is a UI/configuration smoke test, not a real Gemini Live session. No real API Key was supplied to CI and no API consumption occurred. No phone was touched by this mission.

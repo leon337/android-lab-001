@@ -1,0 +1,314 @@
+name: Publicar versão Android assinada
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag estável já integrada à main (ex.: v1.1.0)"
+        required: true
+        type: string
+      publish:
+        description: "Publicar após revisão do artefato. Desmarcado cria uma release draft."
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  build-release:
+    name: Compilar e assinar artefato para revisão
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: android-signing
+    permissions:
+      contents: read
+    steps:
+      - name: Validar branch, tag e segredos de assinatura
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::O workflow de release só pode ser executado a partir da main."
+            exit 1
+          fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)$ ]]; then
+            echo "::error::Use uma tag SemVer estável estrita no formato vMAJOR.MINOR.PATCH."
+            exit 1
+          fi
+
+          for name in ANDROID_SIGNING_KEYSTORE_BASE64 ANDROID_SIGNING_STORE_PASSWORD ANDROID_SIGNING_KEY_ALIAS ANDROID_SIGNING_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::O segredo $name não está configurado no ambiente android-signing."
+              exit 1
+            fi
+          done
+
+          VERSION_NAME="${RELEASE_TAG#v}"
+          python3 - "$VERSION_NAME" <<'PY'
+          import sys
+          major, minor, patch = map(int, sys.argv[1].split("."))
+          if minor >= 100 or patch >= 100:
+              raise SystemExit("MINOR e PATCH precisam ser menores que 100 para versionCode monotônico.")
+          code = major * 10000 + minor * 100 + patch
+          if not 1 <= code <= 2147483647:
+              raise SystemExit("versionCode fora do intervalo permitido pelo Android.")
+          print(f"SemVer válido; versionCode={code}")
+          PY
+
+      - name: Baixar código da tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Confirmar que a tag pertence à main
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags
+          TAG_COMMIT="$(git rev-list -n 1 "$RELEASE_TAG")"
+          if [[ -z "$TAG_COMMIT" ]]; then
+            echo "::error::A tag informada não resolve para um commit."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor "$TAG_COMMIT" origin/main; then
+            echo "::error::A tag precisa apontar para um commit integrado à main."
+            exit 1
+          fi
+          echo "Tag $RELEASE_TAG validada em $TAG_COMMIT."
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: "false"
+
+      - name: Instalar plataforma e build tools
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Configurar Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.13"
+
+      - name: Preparar e validar assinatura temporária
+        shell: bash
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/gemini-live-release.p12"
+          printf '%s' "$ANDROID_SIGNING_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          openssl pkcs12 -in "$KEYSTORE" -passin env:ANDROID_SIGNING_STORE_PASSWORD -noout
+          echo "PKCS#12 presente e senha validada."
+
+      - name: Compilar APK assinado e gerar manifesto de integridade
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          VERSION_NAME="${RELEASE_TAG#v}"
+          VERSION_CODE="$(python3 - "$VERSION_NAME" <<'PY'
+          import sys
+          major, minor, patch = map(int, sys.argv[1].split("."))
+          print(major * 10000 + minor * 100 + patch)
+          PY
+          )"
+
+          gradle --no-daemon :app:assembleRelease \
+            -PappVersionName="$VERSION_NAME" \
+            -PappVersionCode="$VERSION_CODE" \
+            -PandroidSigningStoreFile="$RUNNER_TEMP/gemini-live-release.p12"
+
+          APK_SOURCE="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK_SOURCE"
+          APK_NAME="gemini-live-$VERSION_NAME.apk"
+          cp "$APK_SOURCE" "$APK_NAME"
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK_NAME"
+          CERT_SHA256=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK_NAME" | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {gsub(/:/, "", $2); print toupper($2); exit}')
+          APK_SHA256=$(sha256sum "$APK_NAME" | awk '{print $1}')
+          test -n "$CERT_SHA256"
+
+          export VERSION_NAME VERSION_CODE APK_NAME APK_SHA256 CERT_SHA256 RELEASE_TAG
+          python3 - <<'PY'
+          import json, os
+          manifest = {
+              "schemaVersion": 1,
+              "packageName": "br.com.laboratorio.android",
+              "versionName": os.environ["VERSION_NAME"],
+              "versionCode": int(os.environ["VERSION_CODE"]),
+              "minSdk": 26,
+              "apkAsset": os.environ["APK_NAME"],
+              "apkSha256": os.environ["APK_SHA256"],
+              "signingCertificateSha256": os.environ["CERT_SHA256"],
+          }
+          with open("update-manifest.json", "w", encoding="utf-8") as f:
+              json.dump(manifest, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          with open("release-evidence.txt", "w", encoding="utf-8") as f:
+              f.write(f"tag={os.environ['RELEASE_TAG']}\n")
+              f.write(f"source_commit={os.popen('git rev-parse HEAD').read().strip()}\n")
+              f.write(f"version_name={os.environ['VERSION_NAME']}\n")
+              f.write(f"version_code={os.environ['VERSION_CODE']}\n")
+              f.write(f"apk_sha256={os.environ['APK_SHA256']}\n")
+              f.write(f"signing_certificate_sha256={os.environ['CERT_SHA256']}\n")
+          PY
+
+      - name: Remover keystore temporário
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/gemini-live-release.p12"
+
+      - name: Disponibilizar artefato para inspeção antes da aprovação
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemini-live-release-${{ inputs.tag }}
+          path: |
+            gemini-live-*.apk
+            update-manifest.json
+            release-evidence.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-release:
+    name: Publicar release após aprovação humana
+    needs: build-release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: android-release
+    permissions:
+      contents: write
+    steps:
+      - name: Baixar artefato já compilado e disponível para revisão
+        uses: actions/download-artifact@v4
+        with:
+          name: gemini-live-release-${{ inputs.tag }}
+          path: release-artifact
+
+      - name: Instalar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configurar Android SDK para revalidar assinatura
+        uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: "false"
+
+      - name: Instalar build tools
+        run: sdkmanager --install "build-tools;36.0.0"
+
+      - name: Revalidar manifesto, hash e certificado do artefato aprovado
+        shell: bash
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          APK_PATH="$(find release-artifact -maxdepth 1 -type f -name 'gemini-live-*.apk' -print -quit)"
+          MANIFEST_PATH="release-artifact/update-manifest.json"
+          test -n "$APK_PATH"
+          test -s "$APK_PATH"
+          test -s "$MANIFEST_PATH"
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK_PATH"
+          CERT_SHA256=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK_PATH" | awk -F': ' '/Signer #1 certificate SHA-256 digest/ {gsub(/:/, "", $2); print toupper($2); exit}')
+          export APK_PATH MANIFEST_PATH CERT_SHA256 RELEASE_TAG
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          manifest_path = pathlib.Path(os.environ["MANIFEST_PATH"])
+          apk_path = pathlib.Path(os.environ["APK_PATH"])
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          tag = os.environ["RELEASE_TAG"]
+          version = tag[1:] if tag.startswith("v") else ""
+          if manifest.get("schemaVersion") != 1:
+              raise SystemExit("Schema do manifesto não suportado.")
+          if manifest.get("packageName") != "br.com.laboratorio.android":
+              raise SystemExit("PackageName inesperado no manifesto.")
+          if manifest.get("versionName") != version:
+              raise SystemExit("Tag e versionName não correspondem.")
+          match = re.fullmatch(r"(0|[1-9][0-9]{0,5})\.(0|[1-9][0-9]?)\.(0|[1-9][0-9]?)", version)
+          if not match:
+              raise SystemExit("SemVer estável inválido.")
+          major, minor, patch = map(int, match.groups())
+          expected_code = major * 10000 + minor * 100 + patch
+          if manifest.get("versionCode") != expected_code:
+              raise SystemExit("versionCode não corresponde ao SemVer.")
+          if manifest.get("minSdk") != 26:
+              raise SystemExit("minSdk inesperado no manifesto.")
+          if manifest.get("apkAsset") != apk_path.name:
+              raise SystemExit("Nome do APK não corresponde ao manifesto.")
+          apk_hash = hashlib.sha256(apk_path.read_bytes()).hexdigest().upper()
+          if apk_hash != str(manifest.get("apkSha256", "")).upper():
+              raise SystemExit("SHA-256 do APK não corresponde ao manifesto.")
+          cert_hash = os.environ["CERT_SHA256"].upper()
+          if not re.fullmatch(r"[0-9A-F]{64}", cert_hash):
+              raise SystemExit("Fingerprint do certificado ausente ou inválido.")
+          if cert_hash != str(manifest.get("signingCertificateSha256", "")).upper():
+              raise SystemExit("Certificado real do APK não corresponde ao manifesto.")
+          print(f"Artefato aprovado tecnicamente: {tag}; SHA-256={apk_hash}; certificado={cert_hash}")
+          PY
+
+          echo "APK_PATH=$APK_PATH" >> "$GITHUB_ENV"
+          echo "MANIFEST_PATH=$MANIFEST_PATH" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=${RELEASE_TAG#v}" >> "$GITHUB_ENV"
+
+      - name: Criar draft ou publicar somente após aprovação do ambiente
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+          PUBLISH_RELEASE: ${{ inputs.publish }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Já existe uma release para $RELEASE_TAG. Releases existentes não são sobrescritas."
+            exit 1
+          fi
+
+          if [[ "$PUBLISH_RELEASE" == "true" ]]; then
+            gh release create "$RELEASE_TAG" "$APK_PATH" "$MANIFEST_PATH" \
+              --verify-tag \
+              --title "Gemini Live $VERSION_NAME" \
+              --notes "Versão $VERSION_NAME do Gemini Live Android. APK assinado, com manifesto, hash e certificado verificados após aprovação."
+          else
+            gh release create "$RELEASE_TAG" "$APK_PATH" "$MANIFEST_PATH" \
+              --verify-tag \
+              --draft \
+              --title "Gemini Live $VERSION_NAME" \
+              --notes "RASCUNHO — revisar antes de publicar. Versão $VERSION_NAME do Gemini Live Android. APK assinado, com manifesto, hash e certificado verificados."
+          fi

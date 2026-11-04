@@ -1,0 +1,18 @@
+VALIDATION SUMMARY
+==================
+
+PR #2 code commit: f348cd60f2f45ba48a095e2414867ac89b092fad
+PR #2 CI run: 41748065888 — SUCCESS
+PR #3 code commit tested: 1cc0b79ef33b62c92a431ab3f2fb08af682b1a23
+PR #3 CI run: 41748591796 — SUCCESS
+
+PR #2: unit-test task, Android build, instrumentation, UI smoke — PASS.
+PR #3: unit-test task, Android build, instrumentation — PASS.
+PR #3: 17 instrumented tests started and finished; job success.
+PR #3: UI smoke opened MainActivity, API key field and both Live 3.8 models — PASS.
+YAML parse, bash syntax, git diff --check — PASS.
+
+PR #2 and PR #3 remain OPEN / DRAFT.
+main branch protection configured.
+android-signing and android-release environments configured with main-only policies.
+No signing secrets, API key, keystore, release, merge or phone operation.
