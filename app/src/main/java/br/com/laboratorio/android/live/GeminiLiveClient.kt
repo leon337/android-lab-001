@@ -2,7 +2,6 @@ package br.com.laboratorio.android.live
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.net.Uri
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
@@ -14,6 +13,7 @@ import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.NoiseSuppressor
 import android.os.Build
 import android.util.Base64
+import okhttp3.Call
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -25,7 +25,6 @@ import okio.ByteString
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
-import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -64,7 +63,16 @@ class GeminiLiveClient(
         context.applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val httpClient = OkHttpClient.Builder()
+    // A emissão do token é HTTP finito e precisa de limites próprios.
+    private val authHttpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(10, TimeUnit.SECONDS)
+        .callTimeout(25, TimeUnit.SECONDS)
+        .build()
+
+    // A conexão Live é persistente; readTimeout=0 é intencional somente para WebSocket.
+    private val liveSocketClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(0, TimeUnit.MILLISECONDS)
         .pingInterval(20, TimeUnit.SECONDS)
@@ -74,6 +82,7 @@ class GeminiLiveClient(
     @Volatile private var setupComplete = false
     @Volatile private var muted = false
     @Volatile private var socket: WebSocket? = null
+    @Volatile private var tokenCall: Call? = null
 
     private var tokenJob: Job? = null
     private var setupTimeoutJob: Job? = null
@@ -84,7 +93,7 @@ class GeminiLiveClient(
     private var echoCanceler: AcousticEchoCanceler? = null
     private var noiseSuppressor: NoiseSuppressor? = null
     private var currentSettings: LiveSettings? = null
-    private val playbackQueue = LinkedBlockingQueue<ByteArray>()
+    private val playbackQueue = BoundedAudioBuffer()
 
     fun start(settings: LiveSettings) {
         if (running) return
@@ -122,6 +131,8 @@ class GeminiLiveClient(
         val hadSession = running || socket != null
         running = false
         tokenJob?.cancel()
+        tokenCall?.cancel()
+        tokenCall = null
         setupTimeoutJob?.cancel()
         tokenJob = null
         setupTimeoutJob = null
@@ -137,7 +148,8 @@ class GeminiLiveClient(
     fun close() {
         stop()
         scope.cancel()
-        httpClient.dispatcher.executorService.shutdown()
+        authHttpClient.dispatcher.executorService.shutdown()
+        liveSocketClient.dispatcher.executorService.shutdown()
     }
 
     private fun requestEphemeralToken(apiKey: String): String {
@@ -156,32 +168,49 @@ class GeminiLiveClient(
             .post(body.toString().toRequestBody("application/json".toMediaType()))
             .build()
 
-        httpClient.newCall(request).execute().use { response ->
-            val raw = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                val providerError = runCatching {
-                    JSONObject(raw).optJSONObject("error")
-                }.getOrNull()
-                val providerStatus = providerError?.optString("status").orEmpty()
-                val suffix = if (providerStatus.isNotBlank()) " — $providerStatus" else ""
-                throw IOException("Google recusou a chave API (HTTP ${response.code})$suffix.")
-            }
+        val call = authHttpClient.newCall(request)
+        registerTokenCall(call)
+        try {
+            call.execute().use { response ->
+                val raw = response.body?.string().orEmpty()
+                if (!response.isSuccessful) {
+                    val providerError = runCatching {
+                        JSONObject(raw).optJSONObject("error")
+                    }.getOrNull()
+                    val providerStatus = providerError?.optString("status").orEmpty()
+                    val suffix = if (providerStatus.isNotBlank()) " — $providerStatus" else ""
+                    throw IOException("Google recusou a chave API (HTTP ${response.code})$suffix.")
+                }
 
-            val token = JSONObject(raw).optString("name")
-            if (token.isBlank()) throw IOException("O Google não retornou um token temporário.")
-            return token
+                val token = JSONObject(raw).optString("name")
+                if (token.isBlank()) throw IOException("O Google não retornou um token temporário.")
+                return token
+            }
+        } finally {
+            synchronized(this) {
+                if (tokenCall === call) tokenCall = null
+            }
+        }
+    }
+
+    private fun registerTokenCall(call: Call) {
+        synchronized(this) {
+            if (!running) {
+                call.cancel()
+                throw CancellationException("A solicitação de token foi cancelada.")
+            }
+            tokenCall = call
         }
     }
 
     private fun openWebSocket(token: String, settings: LiveSettings) {
-        val liveUrl = Uri.parse(LIVE_SOCKET_URL)
-            .buildUpon()
-            .appendQueryParameter("access_token", token)
+        // A documentação Gemini permite Authorization: Token para tokens efêmeros;
+        // evita expor a credencial na URL e em logs de proxy/histórico de requisição.
+        val request = Request.Builder()
+            .url(LIVE_SOCKET_URL)
+            .header("Authorization", "Token $token")
             .build()
-            .toString()
-
-        val request = Request.Builder().url(liveUrl).build()
-        socket = httpClient.newWebSocket(request, object : WebSocketListener() {
+        socket = liveSocketClient.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 if (!running) {
                     webSocket.close(1000, "Sessão cancelada")
@@ -348,6 +377,7 @@ class GeminiLiveClient(
     @SuppressLint("MissingPermission")
     private fun startAudio(useSpeaker: Boolean) {
         if (!running) return
+        playbackQueue.clear()
         routeAudio(useSpeaker)
 
         val outputMin = AudioTrack.getMinBufferSize(
@@ -505,6 +535,8 @@ class GeminiLiveClient(
         running = false
         setupTimeoutJob?.cancel()
         tokenJob?.cancel()
+        tokenCall?.cancel()
+        tokenCall = null
         socket?.cancel()
         socket = null
         releaseAudio()
@@ -540,6 +572,8 @@ class GeminiLiveClient(
         .replace(Regex("""(?i)auth_tokens/[A-Za-z0-9_-]+"""), "auth_tokens/[oculto]")
         .replace(Regex("""AIza[\w-]+"""), "[chave API ocultada]")
         .replace(Regex("""(?i)bearer\s+\S+"""), "Bearer [oculto]")
+        .replace(Regex("""(?i)authorization\s*[:=]\s*token\s+\S+"""), "Authorization: Token [oculto]")
+        .replace(Regex("""(?i)\btoken\s+[A-Za-z0-9._~-]{24,}"""), "Token [oculto]")
         .take(180)
 
     private companion object {
