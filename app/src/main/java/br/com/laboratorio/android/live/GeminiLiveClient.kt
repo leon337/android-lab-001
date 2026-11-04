@@ -331,14 +331,15 @@ class GeminiLiveClient(
             return
         }
 
-        val content = packet.optJSONObject("serverContent") ?: return
-        val interactionStatus = packet.optString(
-            "interactionStatus",
-            content.optString("interactionStatus", ""),
-        )
+        val content = packet.optJSONObject("serverContent")
+        val interactionStatus = packet.optString("interactionStatus")
+            .ifBlank { content?.optString("interactionStatus", "").orEmpty() }
         if (interactionStatus.isNotBlank()) {
             listener.onInteractionStatus(interactionStatus)
         }
+
+
+        if (content == null) return
 
         if (content.optBoolean("interrupted", false)) {
             flushPlayback()
